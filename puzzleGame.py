@@ -124,7 +124,8 @@ class Grappler(Block):
 
     def rotate(self):
         super().rotate()
-        self.eaten.rotate()
+        if(self.eaten):
+            self.eaten.rotate()
 class Game():
     def __init__(self):
         self.mode = ""
