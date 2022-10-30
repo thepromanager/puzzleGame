@@ -10,21 +10,34 @@ pygame.init()
 clock = pygame.time.Clock()
 game_display = pygame.display.set_mode(resolution)#, pygame.FULLSCREEN)
 pygame.display.set_caption('Puzzle!')
-pygame.display.set_icon(pygame.image.load("data/house/window.png"))
+pygame.display.set_icon(pygame.image.load("data/blocks/gear.png"))
 
 managers={
     "":pygame_gui.UIManager(resolution), #Main menu
     "p":pygame_gui.UIManager(resolution), #puzzle
 }
-levelBlueprint={
+levelBlueprint={ #målet är att döda alla # alla banor är möjliga
+"Level 0":{"w":5,"h":5,
+    "blocks":[
+    {"type":"pusher","x":1,"y":2,"rot":0},
+    ]},
 "Level 1":{"w":5,"h":5,
+    "blocks":[
+    {"type":"pusher","x":0,"y":4,"rot":1},
+    {"type":"pusher","x":4,"y":2,"rot":3},
+    {"type":"grappler","x":2,"y":1,"rot":0},
+    {"type":"gear","x":2,"y":2,"rot":0},
+    ]},
+"Level 2":{"w":5,"h":5,
     "blocks":[
     {"type":"rotator","x":1,"y":1,"rot":3},
     {"type":"pusher","x":2,"y":1,"rot":3},
     {"type":"grappler","x":3,"y":3,"rot":2},
+    {"type":"gear","x":1,"y":0,"rot":0},
     {"type":"rotator","x":1,"y":3,"rot":1},
     {"type":"pusher","x":2,"y":4,"rot":2},
     {"type":"grappler","x":2,"y":2,"rot":1},
+    {"type":"gear","x":3,"y":2,"rot":1},
     ]},
 }
 def loadImage(name,r,r2=None):
@@ -37,17 +50,17 @@ def imageSpinner(image):
     images=[image]
     for i in range(1,4):
         images.append(pygame.transform.rotate(image, 90*i))
-    return images[1:4]+[image]
+    return images
 class Sound():
     v=1
     pygame.mixer.init(buffer=32)
-    hitSound = pygame.mixer.Sound("data/sound/soundeffect2.wav")
-    lickSound = pygame.mixer.Sound("data/sound/lickeffect.wav")
-    lickSound.set_volume(v*0.3)
+    #hitSound = pygame.mixer.Sound("data/sound/soundeffect2.wav")
+    #lickSound = pygame.mixer.Sound("data/sound/lickeffect.wav")
+    #lickSound.set_volume(v*0.3)
     
-    pygame.mixer.music.load("data/sound/music.wav") #must be wav 16bit and stuff?
-    pygame.mixer.music.set_volume(v*0.1)
-    pygame.mixer.music.play(-1)
+    #pygame.mixer.music.load("data/sound/music.wav") #must be wav 16bit and stuff?
+    #pygame.mixer.music.set_volume(v*0.1)
+    #pygame.mixer.music.play(-1)
 
 class Block():
 
@@ -67,8 +80,8 @@ class Block():
         game_display.blit(self.images[self.rot], (self.x*gridSize+topLeft[0], self.y*gridSize+topLeft[1]))
     def activate(self):
         pass
-    def rotate(self):
-        self.rot=(self.rot+1)%4
+    def rotate(self, amount=1):
+        self.rot=(self.rot+amount)%4
     def move(self,rot):
         game.lvl.grid[self.x][self.y] = None
         self.x += self.dx(rot)
@@ -96,21 +109,55 @@ class Rotator(Block):
         block = self.scan()
         if(block):
             block.rotate()
+class Gear(Block):
+    images=imageSpinner(loadImage("blocks/gear.png", gridSize))
+    def __init__(self,*args):
+        super().__init__(*args)
+        self.alreadyGeared = False
+    def activate(self):
+        self.rotate()
+        for offset in (0,1),(1,0),(-1,0),(0,-1):
+            if(lvl.inbounds(self.x+offset[0],self.y+offset[1])):
+                block = game.lvl.grid[self.x+offset[0]][self.y+offset[1]]
+                if(block):
+                    block.rotate(-1)
+    """
+    def rotate(self,amount=1):
+        # försökte göra så de var kugghjul
+
+        if not self.alreadyGeared:
+            self.alreadyGeared = True
+            super().rotate(amount)
+            gearsToReset = []
+            for offset in (0,1),(1,0),(-1,0),(0,-1):
+                if(lvl.inbounds(self.x+offset[0],self.y+offset[1])):
+                    block = game.lvl.grid[self.x+offset[0]][self.y+offset[1]]
+                    if(block):
+                        gearTurned = block.rotate(-amount)
+                        if gearTurned:
+                            gearsToReset.append(block)
+            for gear in gearsToReset:
+                gear.alreadyGeared = False
+            return True
+    """
 class Pusher(Block):
     images=imageSpinner(loadImage("blocks/pusher.png", gridSize))
     def activate(self):
         self.move(self.rot)
 class Grappler(Block):
-    images=imageSpinner(loadImage("blocks/grappler.png", gridSize))
+    images1=imageSpinner(loadImage("blocks/grappler.png", gridSize))
+    images2=imageSpinner(loadImage("blocks/eaten.png", gridSize))
     def __init__(self,*args):
         super().__init__(*args)
         self.eaten = None
+        self.images = self.images1
     def activate(self):
         if not self.eaten:
             block = self.scan()
             if block:
                 game.lvl.grid[block.x][block.y] = None
                 self.eaten = block
+                self.images = self.images2
             else:
                 pass # move to edge?
         else:
@@ -121,11 +168,12 @@ class Grappler(Block):
             self.eaten.move(self.rot)
             game.lvl.grid[self.x][self.y]=self
             self.eaten = None
+            self.images = self.images1
 
-    def rotate(self):
-        super().rotate()
+    def rotate(self,amount=1):
+        super().rotate(amount)
         if(self.eaten):
-            self.eaten.rotate()
+            self.eaten.rotate(amount)
 class Game():
     def __init__(self):
         self.mode = ""
@@ -181,7 +229,7 @@ class Level():
                 else:
                     pass # ground
 
-blockClassHash={"rotator":Rotator,"grappler":Grappler,"pusher":Pusher}
+blockClassHash={"rotator":Rotator,"gear":Gear,"grappler":Grappler,"pusher":Pusher}
 
 # Main Menu
 menu_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((20, 25), (200, 75)),html_text="Yo though <br>$100",manager=managers[""])
@@ -224,7 +272,7 @@ while jump_out == False:
 
             if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
                 
-                Sound.hitSound.play()
+                #Sound.hitSound.play()
                 #buttons
                 if event.ui_element == exit_button:
                     jump_out = True
