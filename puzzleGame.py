@@ -21,14 +21,20 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga
     "blocks":[
     {"type":"pusher","x":1,"y":2,"rot":0},
     ]},
-"Level 1":{"w":5,"h":5,
+"Level a":{"w":5,"h":5,
     "blocks":[
     {"type":"pusher","x":0,"y":4,"rot":1},
     {"type":"pusher","x":4,"y":2,"rot":3},
     {"type":"grappler","x":2,"y":1,"rot":0},
     {"type":"gear","x":2,"y":2,"rot":0},
     ]},
-"Level 2":{"w":5,"h":5,
+"Level 1":{"w":5,"h":5,
+    "blocks":[
+    {"type":"pusher","x":0,"y":4,"rot":1},
+    {"type":"grappler","x":3,"y":1,"rot":0},
+    {"type":"gear","x":3,"y":2,"rot":0},
+    ]},
+"Level 3":{"w":5,"h":5,
     "blocks":[
     {"type":"rotator","x":1,"y":1,"rot":3},
     {"type":"pusher","x":2,"y":1,"rot":3},
