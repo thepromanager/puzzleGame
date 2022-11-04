@@ -4,8 +4,7 @@ import random
 
 resolution = (1200,700)
 gridSize = 64
-topLeft = (20,20+gridSize)
-
+topLeft = [20,20+gridSize]
 pygame.init()
 clock = pygame.time.Clock()
 game_display = pygame.display.set_mode(resolution)#, pygame.FULLSCREEN)
@@ -15,6 +14,7 @@ pygame.display.set_icon(pygame.image.load("data/blocks/gear.png"))
 managers={
     "":pygame_gui.UIManager(resolution), #Main menu
     "p":pygame_gui.UIManager(resolution), #puzzle
+    "w":pygame_gui.UIManager(resolution), #win screen
 }
 levelBlueprint={ #målet är att döda alla # alla banor är möjliga
 "Level 0":{"w":5,"h":5,
@@ -185,7 +185,7 @@ class Game():
         self.mode = ""
         self.lvl = None
         self.history = []
-        self.levelName = "Level 1"
+        self.levelName = ""
         #self.images = {}
         #for i in self.blockNames:
         #    image = loadImage(self.pathName+"/"+i+".png", gridSize)
@@ -199,12 +199,24 @@ class Game():
 
     def doMove(self,move):
         self.lvl.grid[move[0]][move[1]].activate()
+        if(self.lvl.checkWin()):
+            self.win()
     def start(self):
+        self.mode="p"
         self.lvl = Level(levelBlueprint[self.levelName])
+        self.history = []
 
     def draw(self):
-        if self.lvl:
+        if self.lvl and (self.mode=="p" or self.mode=="w"):
             self.lvl.draw()
+            self.updateTextBox()
+    def win(self):
+        self.mode="w"
+        win_textbox.html_text=self.levelName+" won in "+str(len(self.history))+" moves"
+        win_textbox.rebuild()
+    def updateTextBox(self):
+        level_textbox.html_text="Currently Playing: "+self.levelName+"<br>"+"Moves played: "+str(len(self.history))
+        level_textbox.rebuild()
 class Level():
 
     def __init__(self, blueprint):
@@ -220,9 +232,17 @@ class Level():
         for blockPrint in blueprint["blocks"]:
             block = blockClassHash[blockPrint["type"]](blockPrint["x"],blockPrint["y"],blockPrint["rot"])
             self.grid[block.x][block.y]=block
-        
-
-
+        self.alignBoxes()
+    def alignBoxes(self):
+        topLeft[0]=resolution[0]/2-self.width*gridSize/2
+        topLeft[1]=20+gridSize
+        #Change button positions based on size of grid ?? How to do that
+    def checkWin(self):
+        for col in self.grid:
+            for block in col:
+                if(block):
+                    return False
+        return True
     def draw(self):
         for i in range(self.height+1):
             pygame.draw.line(game_display, (200,200,200), (topLeft[0],topLeft[1]+gridSize*i), (topLeft[0]+self.width*gridSize, topLeft[1]+gridSize*i), 1)
@@ -235,21 +255,30 @@ class Level():
                 else:
                     pass # ground
 
+
 blockClassHash={"rotator":Rotator,"gear":Gear,"grappler":Grappler,"pusher":Pusher}
 
 # Main Menu
-menu_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((20, 25), (200, 75)),html_text="Yo though <br>$100",manager=managers[""])
-build_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((350, 275), (200, 50)),text='Build Buildings',manager=managers[""])
-exit_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((350, 425), (200, 50)),text='Bye Bye',manager=managers[""])
+menu_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((20, 25), (200, 75)),html_text="Select level",manager=managers[""])
+levelButtons=[]
+i=0
+for lvlbp in levelBlueprint:
+    levelButtons.append(pygame_gui.elements.UIButton(relative_rect=pygame.Rect((50+i*120, 275), (100, 50)),text=lvlbp,manager=managers[""]))
+    i+=1
+#exit_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((350, 425), (200, 50)),text='Bye Bye',manager=managers[""])
 
 #back_buttons = [
 #    pygame_gui.elements.UIButton(relative_rect=pygame.Rect((50, 50), (100, 50)),text='Back',manager=managers["s"]),
 #]
 
 # Building
-undo_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((700, 125), (200, 75)),html_text="Yundo",manager=managers["p"])
-done_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((720, 305), (200, 100)),text='',manager=managers["p"])
-undo_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((520, 305), (200, 100)),text='Is bad!?',manager=managers["p"])
+level_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((800, 125), (250, 75)),html_text="Playing",manager=managers["p"])
+back_button1 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((600, 505), (200, 100)),text='Back to Level select',manager=managers["p"])
+undo_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((400, 505), (200, 100)),text='Undo',manager=managers["p"])
+
+win_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((800, 125), (250, 75)),html_text="Win",manager=managers["w"])
+back_button2 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((600, 505), (200, 100)),text='Back to Level select',manager=managers["w"])
+next_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((400, 505), (200, 100)),text='Next Level',manager=managers["w"])
 
 # Shop
 
@@ -264,14 +293,15 @@ while jump_out == False:
             jump_out = True    
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and game.mode=="p":
             (mouseX,mouseY)=pygame.mouse.get_pos()
-            mouseX=(mouseX-topLeft[0])//gridSize
-            mouseY=(mouseY-topLeft[1])//gridSize
+            mouseX=int((mouseX-topLeft[0])//gridSize)
+            mouseY=int((mouseY-topLeft[1])//gridSize)
             lvl = game.lvl
             if(lvl.inbounds(mouseX,mouseY)):
                 block=lvl.grid[mouseX][mouseY]
                 if(block):
-                    block.activate()
+                    game.doMove((mouseX,mouseY))
                     game.history.append((mouseX,mouseY))
+
 
 
         if event.type == pygame.USEREVENT:
@@ -280,13 +310,24 @@ while jump_out == False:
                 
                 #Sound.hitSound.play()
                 #buttons
-                if event.ui_element == exit_button:
-                    jump_out = True
-                if event.ui_element == build_button:
-                    game.mode="p"
+                #if event.ui_element == exit_button:
+                #    jump_out = True
+                if event.ui_element in levelButtons:
+                    game.levelName=levelButtons[levelButtons.index(event.ui_element)].text
                     game.start()
                 if event.ui_element == undo_button:
                     game.undo()
+                if event.ui_element == back_button1 or event.ui_element == back_button2:
+                    game.mode=""
+                if event.ui_element == next_button:
+                    ks=list(levelBlueprint.keys())
+                    inx = ks.index(game.levelName)+1
+                    if inx<len(ks):
+                        game.levelName=ks[inx]
+                        game.start()
+                    else:
+                        game.mode=""
+
 
 
         manager.process_events(event)
