@@ -17,24 +17,48 @@ managers={
     "w":pygame_gui.UIManager(resolution), #win screen
 }
 levelBlueprint={ #målet är att döda alla # alla banor är möjliga
-"Level 0":{"w":5,"h":5,
+"level 0":{"w":5,"h":5,
     "blocks":[
     {"type":"pusher","x":1,"y":2,"rot":0},
     ]},
-"Level a":{"w":5,"h":5,
+"level 1":{"w":3,"h":3, #
     "blocks":[
-    {"type":"pusher","x":0,"y":4,"rot":1},
-    {"type":"pusher","x":4,"y":2,"rot":3},
-    {"type":"grappler","x":2,"y":1,"rot":0},
-    {"type":"gear","x":2,"y":2,"rot":0},
+    {"type":"rotator","x":0,"y":2,"rot":0},
+    {"type":"rotator","x":2,"y":2,"rot":3},
+    {"type":"rotator","x":2,"y":0,"rot":0},
+    {"type":"pusher","x":0,"y":0,"rot":2},
     ]},
-"Level 1":{"w":5,"h":5,
+#"Level a":{"w":5,"h":5,
+#    "blocks":[
+#    {"type":"pusher","x":0,"y":4,"rot":1},
+#    {"type":"pusher","x":4,"y":2,"rot":3},
+#    {"type":"grappler","x":2,"y":1,"rot":0},
+#    {"type":"gear","x":2,"y":2,"rot":0},
+#    ]},
+"Level 2":{"w":2,"h":2, #
+    "blocks":[
+    {"type":"rotator","x":0,"y":1,"rot":0},
+    {"type":"grappler","x":1,"y":0,"rot":3},
+    {"type":"gear","x":1,"y":1,"rot":0},
+    {"type":"pusher","x":0,"y":0,"rot":3},
+    ]},
+"Level 3":{"w":5,"h":5,
     "blocks":[
     {"type":"pusher","x":0,"y":4,"rot":1},
     {"type":"grappler","x":3,"y":1,"rot":0},
     {"type":"gear","x":3,"y":2,"rot":0},
     ]},
-"Level 3":{"w":5,"h":5,
+"Level 4":{"w":3,"h":3, # I can do it in 12 moves
+    "blocks":[
+    {"type":"grappler","x":0,"y":1,"rot":0},
+    {"type":"grappler","x":1,"y":0,"rot":3},
+    {"type":"grappler","x":2,"y":1,"rot":2},
+    {"type":"pusher","x":1,"y":2,"rot":1},
+    {"type":"gear","x":1,"y":1,"rot":0},
+    ]},
+
+
+"Level 5":{"w":5,"h":5,
     "blocks":[
     {"type":"rotator","x":1,"y":1,"rot":3},
     {"type":"pusher","x":2,"y":1,"rot":3},
@@ -235,7 +259,7 @@ class Level():
         self.alignBoxes()
     def alignBoxes(self):
         topLeft[0]=resolution[0]/2-self.width*gridSize/2
-        topLeft[1]=20+gridSize
+        topLeft[1]=resolution[1]/2-self.height*gridSize*3/4
         #Change button positions based on size of grid ?? How to do that
     def checkWin(self):
         for col in self.grid:
@@ -299,8 +323,9 @@ while jump_out == False:
             if(lvl.inbounds(mouseX,mouseY)):
                 block=lvl.grid[mouseX][mouseY]
                 if(block):
-                    game.doMove((mouseX,mouseY))
                     game.history.append((mouseX,mouseY))
+                    game.doMove((mouseX,mouseY))
+                    
 
 
 
