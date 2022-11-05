@@ -1,6 +1,7 @@
 import pygame
 import pygame_gui
 import random
+import time
 
 resolution = (1200,700)
 gridSize = 64
@@ -17,9 +18,15 @@ managers={
     "w":pygame_gui.UIManager(resolution), #win screen
 }
 levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill ha ett annat mål
-"level 0":{"w":5,"h":5, #b4
+"level -1":{"w":5,"h":3, #b4
+    "blocks":[
+    {"type":"pusher","x":1,"y":1,"rot":0},
+    ]},
+"level 0":{"w":6,"h":4, #b6
     "blocks":[
     {"type":"pusher","x":1,"y":2,"rot":0},
+    {"type":"killer","x":3,"y":2,"rot":1},
+    {"type":"killer","x":4,"y":1,"rot":0},
     ]},
 "level 1":{"w":3,"h":3, # b18
     "blocks":[
@@ -41,7 +48,7 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"grappler","x":3,"y":1,"rot":0},
     {"type":"gear","x":3,"y":2,"rot":0},
     ]},
-"Level 3b":{"w":5,"h":5, # b45
+"Level 3b":{"w":5,"h":5, # b45 actually b36:( 
     "blocks":[
     {"type":"pusher","x":1,"y":4,"rot":1},
     {"type":"pusher","x":0,"y":4,"rot":2},
@@ -65,7 +72,24 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"grappler","x":1,"y":4,"rot":1},
     {"type":"pusher","x":1,"y":1,"rot":1},
     ]},
-
+"Level 6":{"w":8,"h":3, # b36
+    "blocks":[
+    {"type":"grappler","x":0,"y":1,"rot":0},
+    {"type":"grappler","x":2,"y":1,"rot":2},
+    {"type":"killer","x":1,"y":1,"rot":3},
+    {"type":"killer","x":3,"y":1,"rot":1},
+    {"type":"grappler","x":4,"y":2,"rot":2},
+    {"type":"killer","x":6,"y":2,"rot":2},
+    {"type":"gear","x":7,"y":0,"rot":1},
+    {"type":"pusher","x":5,"y":1,"rot":1},
+    ]},
+"Level 7":{"w":3,"h":3, # b?
+    "blocks":[
+    {"type":"grappler","x":0,"y":1,"rot":0},
+    {"type":"magnet","x":2,"y":1,"rot":2},
+    {"type":"gear","x":1,"y":2,"rot":1},
+    {"type":"pusher","x":2,"y":0,"rot":1},
+    ]},
 "Level x":{"w":5,"h":5, # b25
     "blocks":[
     {"type":"rotator","x":1,"y":1,"rot":3},
@@ -76,6 +100,49 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"pusher","x":2,"y":4,"rot":2},
     {"type":"grappler","x":2,"y":2,"rot":1},
     {"type":"gear","x":3,"y":2,"rot":1},
+    ]},
+"Level xx":{"w":5,"h":5, # b33
+    "blocks":[
+    {"type":"rotator","x":1,"y":1,"rot":3},
+    {"type":"pusher","x":2,"y":1,"rot":3},
+    {"type":"grappler","x":3,"y":3,"rot":2},
+    {"type":"gear","x":1,"y":0,"rot":0},
+    {"type":"killer","x":0,"y":2,"rot":2},
+    {"type":"rotator","x":1,"y":3,"rot":1},
+    {"type":"pusher","x":2,"y":4,"rot":2},
+    {"type":"grappler","x":2,"y":2,"rot":1},
+    {"type":"gear","x":3,"y":2,"rot":1},
+    {"type":"killer","x":3,"y":0,"rot":3},
+    ]},
+"Level xxx":{"w":5,"h":5, # b33
+    "blocks":[
+    {"type":"rotator","x":1,"y":1,"rot":3},
+    {"type":"pusher","x":2,"y":1,"rot":3},
+    {"type":"grappler","x":3,"y":3,"rot":2},
+    {"type":"gear","x":1,"y":0,"rot":0},
+    {"type":"killer","x":0,"y":2,"rot":2},
+    {"type":"magnet","x":4,"y":2,"rot":1},
+    {"type":"rotator","x":1,"y":3,"rot":1},
+    {"type":"pusher","x":2,"y":4,"rot":2},
+    {"type":"grappler","x":2,"y":2,"rot":1},
+    {"type":"gear","x":3,"y":2,"rot":1},
+    {"type":"killer","x":3,"y":0,"rot":3},
+    {"type":"magnet","x":1,"y":2,"rot":0},
+    ]},
+"magnet test":{"w":5,"h":5, # b33
+    "blocks":[
+    {"type":"rotator","x":1,"y":1,"rot":3},
+    {"type":"pusher","x":2,"y":1,"rot":3},
+    {"type":"grappler","x":3,"y":3,"rot":2},
+    {"type":"gear","x":1,"y":0,"rot":0},
+    {"type":"magnet","x":0,"y":2,"rot":2},
+    {"type":"magnet","x":4,"y":2,"rot":1},
+    {"type":"magnet","x":1,"y":3,"rot":1},
+    {"type":"pusher","x":2,"y":4,"rot":1},
+    {"type":"grappler","x":2,"y":2,"rot":1},
+    {"type":"gear","x":3,"y":2,"rot":1},
+    {"type":"magnet","x":3,"y":0,"rot":3},
+    {"type":"magnet","x":1,"y":2,"rot":0},
     ]},
 }
 def loadImage(name,r,r2=None):
@@ -118,8 +185,8 @@ class Block():
         game_display.blit(self.images[self.rot], (self.x*gridSize+topLeft[0], self.y*gridSize+topLeft[1]))
     def activate(self):
         pass
-    def rotate(self, amount=1):
-        self.rot=(self.rot+amount)%4
+    def rotate(self, direction=1):
+        self.rot=(self.rot+direction)%4
     def move(self,rot):
         game.lvl.grid[self.x][self.y] = None
         self.x += self.dx(rot)
@@ -141,6 +208,7 @@ class Block():
                 i+=1
             else:
                 return game.lvl.grid[self.x+i*dx][self.y+i*dy]
+
 class Rotator(Block):
     images=imageSpinner(loadImage("blocks/rotator.png", gridSize))
     def activate(self):
@@ -155,23 +223,27 @@ class Gear(Block):
     def activate(self):
         self.rotate()
         for offset in (0,1),(1,0),(-1,0),(0,-1):
+            print(offset)
             if(lvl.inbounds(self.x+offset[0],self.y+offset[1])):
                 block = game.lvl.grid[self.x+offset[0]][self.y+offset[1]]
-                if(block):
-                    block.rotate(-1)
+                if(block and block!=self):
+                    if (block.__class__.__name__=="Magnet" and block.powered==True and (-block.dx(),-block.dy())==offset):
+                        block.rot = (block.rot-1)%4 # workaround
+                    else:
+                        block.rotate(-1)
     """
-    def rotate(self,amount=1):
+    def rotate(self,direction=1):
         # försökte göra så de var kugghjul
 
         if not self.alreadyGeared:
             self.alreadyGeared = True
-            super().rotate(amount)
+            super().rotate(direction)
             gearsToReset = []
             for offset in (0,1),(1,0),(-1,0),(0,-1):
                 if(lvl.inbounds(self.x+offset[0],self.y+offset[1])):
                     block = game.lvl.grid[self.x+offset[0]][self.y+offset[1]]
                     if(block):
-                        gearTurned = block.rotate(-amount)
+                        gearTurned = block.rotate(-direction)
                         if gearTurned:
                             gearsToReset.append(block)
             for gear in gearsToReset:
@@ -199,19 +271,77 @@ class Grappler(Block):
             else:
                 pass # move to edge?
         else:
-            self.eaten.x=self.x
-            self.eaten.y=self.y
+            if(lvl.inbounds(self.x+self.dx(),self.y+self.dy())):
+                block = game.lvl.grid[self.x+self.dx()][self.y+self.dy()]
+                if block:
+                    block.move(self.rot)
+                game.lvl.grid[self.x+self.dx()][self.y+self.dy()]=self.eaten
+                self.eaten.x=self.x+self.dx()
+                self.eaten.y=self.y+self.dy()
             
-            game.lvl.grid[self.x][self.y]=self.eaten
-            self.eaten.move(self.rot)
-            game.lvl.grid[self.x][self.y]=self
             self.eaten = None
             self.images = self.images1
 
-    def rotate(self,amount=1):
-        super().rotate(amount)
+    def rotate(self,direction=1):
+        super().rotate(direction)
         if(self.eaten):
-            self.eaten.rotate(amount)
+            self.eaten.rot = (self.eaten.rot + direction)%4
+class Magnet(Block): # causes some problems ig
+    images1=imageSpinner(loadImage("blocks/magnet.png", gridSize))
+    images2=imageSpinner(loadImage("blocks/magnet2.png", gridSize))
+    def __init__(self,*args):
+        super().__init__(*args)
+        self.powered = None
+        self.images = self.images1
+    def activate(self):
+        if not self.powered:
+            self.powered = True
+            self.images = self.images2
+        else:
+            self.powered = False
+            self.images = self.images1
+
+    def move(self,rot):
+        game.pause(0.1)
+
+        super().move(rot)
+        game.pause(0.1)
+
+        if self.powered and rot!=self.rot:
+            if(lvl.inbounds(self.x+self.dx(),self.y+self.dy())):
+                block = game.lvl.grid[self.x+self.dx()][self.y+self.dy()]
+                if block and not (block.__class__.__name__=="Magnet" and block.powered==True): # difficult paradoxes?
+                    game.lvl.grid[self.x+self.dx()][self.y+self.dy()].move(rot)
+        game.pause(0.1)
+
+    def rotate(self,direction=1):
+        oldRot = self.rot
+        game.pause(0.1)
+
+        if self.powered:
+            if(lvl.inbounds(self.x+self.dx(),self.y+self.dy())):
+                block = game.lvl.grid[self.x+self.dx()][self.y+self.dy()]
+                if block and not (block.__class__.__name__=="Magnet" and block.powered==True):
+                    block.move((self.rot+direction)%4)
+                    block.rotate(direction)
+        game.pause(0.1)
+
+        super().rotate(direction)
+        game.pause(0.1)
+
+        if self.powered:
+            if(lvl.inbounds(self.x+self.dx()+self.dx(oldRot),self.y+self.dy()+self.dy(oldRot))):
+                block = game.lvl.grid[self.x+self.dx()+self.dx(oldRot)][self.y+self.dy()+self.dy(oldRot)]
+                if block and not (block.__class__.__name__=="Magnet" and block.powered==True):
+                    block.move((self.rot+direction)%4)
+        game.pause(0.1)
+
+class Killer(Block):
+    images=imageSpinner(loadImage("blocks/killer.png", gridSize))
+    def activate(self):
+        if(lvl.inbounds(self.x+self.dx(),self.y+self.dy())):
+            game.lvl.grid[self.x+self.dx()][self.y+self.dy()] = None
+
 class Game():
     def __init__(self):
         self.mode = ""
@@ -239,6 +369,8 @@ class Game():
         self.history = []
 
     def draw(self):
+        game_display.fill((100,100,200))
+        manager.draw_ui(game_display)
         if self.lvl and (self.mode=="p" or self.mode=="w"):
             self.lvl.draw()
             self.updateTextBox()
@@ -249,6 +381,11 @@ class Game():
     def updateTextBox(self):
         level_textbox.html_text="Currently Playing: "+self.levelName+"<br>"+"Moves played: "+str(len(self.history))
         level_textbox.rebuild()
+    def pause(self,secs): # debug
+        pass
+        #game.draw()
+        #pygame.display.flip()
+        #time.sleep(secs)
 class Level():
 
     def __init__(self, blueprint):
@@ -294,7 +431,7 @@ class Level():
                     pass # ground
 
 
-blockClassHash={"rotator":Rotator,"gear":Gear,"grappler":Grappler,"pusher":Pusher}
+blockClassHash={"rotator":Rotator,"gear":Gear,"grappler":Grappler,"pusher":Pusher,"killer":Killer,"magnet":Magnet}
 
 # Main Menu
 menu_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((20, 25), (200, 75)),html_text="Select level",manager=managers[""])
@@ -377,10 +514,6 @@ while jump_out == False:
 
     manager.update(time_delta)
 
-
-
-    game_display.fill((100,100,200))
-    manager.draw_ui(game_display)
     
     game.draw()
 
