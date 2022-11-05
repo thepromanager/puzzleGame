@@ -16,39 +16,40 @@ managers={
     "p":pygame_gui.UIManager(resolution), #puzzle
     "w":pygame_gui.UIManager(resolution), #win screen
 }
-levelBlueprint={ #målet är att döda alla # alla banor är möjliga
-"level 0":{"w":5,"h":5,
+levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill ha ett annat mål
+"level 0":{"w":5,"h":5, #b4
     "blocks":[
     {"type":"pusher","x":1,"y":2,"rot":0},
     ]},
-"level 1":{"w":3,"h":3, #
+"level 1":{"w":3,"h":3, # b18
     "blocks":[
     {"type":"rotator","x":0,"y":2,"rot":0},
     {"type":"rotator","x":2,"y":2,"rot":3},
     {"type":"rotator","x":2,"y":0,"rot":0},
     {"type":"pusher","x":0,"y":0,"rot":2},
     ]},
-#"Level a":{"w":5,"h":5,
-#    "blocks":[
-#    {"type":"pusher","x":0,"y":4,"rot":1},
-#    {"type":"pusher","x":4,"y":2,"rot":3},
-#    {"type":"grappler","x":2,"y":1,"rot":0},
-#    {"type":"gear","x":2,"y":2,"rot":0},
-#    ]},
-"Level 2":{"w":2,"h":2, #
+"Level 2":{"w":2,"h":2, # b12
     "blocks":[
     {"type":"rotator","x":0,"y":1,"rot":0},
     {"type":"grappler","x":1,"y":0,"rot":3},
     {"type":"gear","x":1,"y":1,"rot":0},
     {"type":"pusher","x":0,"y":0,"rot":3},
     ]},
-"Level 3":{"w":5,"h":5,
+"Level 3":{"w":5,"h":5, # b19
     "blocks":[
     {"type":"pusher","x":0,"y":4,"rot":1},
     {"type":"grappler","x":3,"y":1,"rot":0},
     {"type":"gear","x":3,"y":2,"rot":0},
     ]},
-"Level 4":{"w":3,"h":3, # I can do it in 12 moves
+"Level 3b":{"w":5,"h":5, # b45
+    "blocks":[
+    {"type":"pusher","x":1,"y":4,"rot":1},
+    {"type":"pusher","x":0,"y":4,"rot":2},
+    {"type":"gear","x":2,"y":4,"rot":3},
+    {"type":"grappler","x":3,"y":1,"rot":0},
+    {"type":"gear","x":3,"y":2,"rot":0},
+    ]},
+"Level 4":{"w":3,"h":3, # n:I can do it in 12 moves # b8
     "blocks":[
     {"type":"grappler","x":0,"y":1,"rot":0},
     {"type":"grappler","x":1,"y":0,"rot":3},
@@ -56,9 +57,16 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga
     {"type":"pusher","x":1,"y":2,"rot":1},
     {"type":"gear","x":1,"y":1,"rot":0},
     ]},
+"Level 5":{"w":5,"h":5, # b17
+    "blocks":[
+    {"type":"grappler","x":2,"y":2,"rot":0},
+    {"type":"grappler","x":4,"y":2,"rot":3},
+    {"type":"grappler","x":4,"y":4,"rot":2},
+    {"type":"grappler","x":1,"y":4,"rot":1},
+    {"type":"pusher","x":1,"y":1,"rot":1},
+    ]},
 
-
-"Level 5":{"w":5,"h":5,
+"Level x":{"w":5,"h":5, # b25
     "blocks":[
     {"type":"rotator","x":1,"y":1,"rot":3},
     {"type":"pusher","x":2,"y":1,"rot":3},
@@ -261,6 +269,12 @@ class Level():
         topLeft[0]=resolution[0]/2-self.width*gridSize/2
         topLeft[1]=resolution[1]/2-self.height*gridSize*3/4
         #Change button positions based on size of grid ?? How to do that
+
+        bottomEdge = resolution[1]/2+self.height*gridSize/2
+        undo_button.relative_rect = pygame.Rect((400, bottomEdge+100), (200, 100))
+        undo_button.rebuild()
+        #idk it doesnt work
+
     def checkWin(self):
         for col in self.grid:
             for block in col:
@@ -287,7 +301,7 @@ menu_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((20, 25),
 levelButtons=[]
 i=0
 for lvlbp in levelBlueprint:
-    levelButtons.append(pygame_gui.elements.UIButton(relative_rect=pygame.Rect((50+i*120, 275), (100, 50)),text=lvlbp,manager=managers[""]))
+    levelButtons.append(pygame_gui.elements.UIButton(relative_rect=pygame.Rect((50+(i%8)*120, 275+100*(i//8)), (100, 50)),text=lvlbp,manager=managers[""]))
     i+=1
 #exit_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((350, 425), (200, 50)),text='Bye Bye',manager=managers[""])
 
@@ -297,12 +311,14 @@ for lvlbp in levelBlueprint:
 
 # Building
 level_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((800, 125), (250, 75)),html_text="Playing",manager=managers["p"])
-back_button1 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((600, 505), (200, 100)),text='Back to Level select',manager=managers["p"])
+back_button1 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 505), (200, 100)),text='Back to Level select',manager=managers["p"])
 undo_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((400, 505), (200, 100)),text='Undo',manager=managers["p"])
+reset_button1 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((600, 505), (200, 100)),text='Reset',manager=managers["p"])
 
 win_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((800, 125), (250, 75)),html_text="Win",manager=managers["w"])
-back_button2 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((600, 505), (200, 100)),text='Back to Level select',manager=managers["w"])
-next_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((400, 505), (200, 100)),text='Next Level',manager=managers["w"])
+back_button2 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 505), (200, 100)),text='Back to Level select',manager=managers["w"])
+next_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 505), (200, 100)),text='Next Level',manager=managers["w"])
+reset_button2 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((600, 505), (200, 100)),text='Reset',manager=managers["w"])
 
 # Shop
 
@@ -344,6 +360,8 @@ while jump_out == False:
                     game.undo()
                 if event.ui_element == back_button1 or event.ui_element == back_button2:
                     game.mode=""
+                if event.ui_element == reset_button1 or event.ui_element == reset_button2:
+                    game.start()
                 if event.ui_element == next_button:
                     ks=list(levelBlueprint.keys())
                     inx = ks.index(game.levelName)+1
