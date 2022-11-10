@@ -476,6 +476,7 @@ class Game():
             self.history.pop()
             for move in self.history:
                 self.doMove(move)
+            self.fxs=[]
 
     def doMove(self,move):
         self.lvl.grid[move[0]][move[1]].activate()
