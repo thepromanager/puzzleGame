@@ -47,6 +47,19 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"pusher","x":1,"y":2,"rot":0},
     {"type":"pusher","x":2,"y":1,"rot":3},
     ]},   
+"poff":{"w":6,"h":5, #b6
+    "blocks":[
+    {"type":"fan","x":0,"y":0,"rot":3},
+    {"type":"fan","x":0,"y":1,"rot":3},
+    {"type":"fan","x":0,"y":3,"rot":0},
+    {"type":"fan","x":1,"y":0,"rot":3},
+    {"type":"fan","x":1,"y":1,"rot":3},
+    {"type":"fan","x":1,"y":3,"rot":0},
+    {"type":"fan","x":3,"y":0,"rot":3},
+    {"type":"fan","x":3,"y":1,"rot":3},
+    {"type":"fan","x":3,"y":3,"rot":0},
+    {"type":"killer","x":4,"y":4,"rot":0},
+    ]},   
 "level 0":{"w":6,"h":4, #b6
     "blocks":[
     {"type":"pusher","x":1,"y":2,"rot":0},
@@ -181,6 +194,7 @@ def imageSpinner(image):
     for i in range(1,4):
         images.append(pygame.transform.rotate(image, 90*i))
     return images
+
 class Sound():
     v=1
     pygame.mixer.init(buffer=32)
@@ -191,7 +205,18 @@ class Sound():
     #pygame.mixer.music.load("data/sound/music.wav") #must be wav 16bit and stuff?
     #pygame.mixer.music.set_volume(v*0.1)
     #pygame.mixer.music.play(-1)
-
+class FX():
+    def __init__(self, images,time):
+        self.images = images
+        self.time = time
+    def draw(self):
+        
+        if(self.time<1):
+            game.fxs.remove(self)
+        else:  
+            for image in self.images:
+                game_display.blit(image[2], (image[0]*gridSize+topLeft[0], image[1]*gridSize+topLeft[1]))
+        self.time-=1
 class Block():
 
     def __init__(self, x, y,rot):
@@ -249,13 +274,24 @@ class Block():
                 i+=1
             else:
                 return game.lvl.grid[self.x+i*dx][self.y+i*dy]
-
+    def createFx(self,length,time,startImage,middleImage=None,endImage=None):
+        dx=self.dx()
+        dy=self.dy()
+        images=[[self.x,self.y,startImage]]
+        if(length>0 and endImage):
+            images+=[[self.x+dx*(length),self.y+dy*length,endImage]]
+        if(length>1 and middleImage):
+            images+=[[self.x+dx*i,self.y+dy*i,middleImage] for i in range(1,length)]
+        game.fxs.append(FX(images,time))
 class Rotator(Block):
     images=imageSpinner(loadImage("blocks/rotator.png", gridSize))
+    fx1=imageSpinner(loadImage("blocks/rotatorFX1.png", gridSize))
+    fx2=imageSpinner(loadImage("blocks/rotatorFX2.png", gridSize))
     def activate(self):
         block = self.scan()
         if(block):
             block.rotate()
+            self.createFx(abs(block.x+block.y-self.x-self.y),7,self.images[self.rot],self.fx1[self.rot],self.fx2[self.rot])
 class Gear(Block):
     images=imageSpinner(loadImage("blocks/gear.png", gridSize))
     def __init__(self,*args):
@@ -297,6 +333,8 @@ class Pusher(Block):
 class Grappler(Block):
     images1=imageSpinner(loadImage("blocks/grappler.png", gridSize))
     images2=imageSpinner(loadImage("blocks/eaten.png", gridSize))
+    fx1=imageSpinner(loadImage("blocks/grapplerFX1.png", gridSize))
+    fx2=imageSpinner(loadImage("blocks/grapplerFX2.png", gridSize))
     def __init__(self,*args):
         super().__init__(*args)
         self.eaten = None
@@ -308,6 +346,7 @@ class Grappler(Block):
                 game.lvl.grid[block.x][block.y] = None
                 self.eaten = block
                 self.images = self.images2
+                self.createFx(abs(block.x+block.y-self.x-self.y),10,self.images1[self.rot],self.fx1[self.rot],self.fx2[self.rot])
             else:
                 pass # move to edge?
         else:
@@ -393,11 +432,17 @@ class Killer(Block):
             game.lvl.grid[self.x+self.dx()][self.y+self.dy()] = None
 class Dragon(Block):
     images=imageSpinner(loadImage("blocks/dragon.png", gridSize))
+    fx1=imageSpinner(loadImage("blocks/dragonFire.png", gridSize))
+    fx2=imageSpinner(loadImage("blocks/dragonFX1.png", gridSize))
+    fx3=imageSpinner(loadImage("blocks/dragonFX2.png", gridSize))
+
     def activate(self):
         i=0
         while(lvl.inbounds(self.x+self.dx()*i,self.y+self.dy()*i)):
             game.lvl.grid[self.x+self.dx()*i][self.y+self.dy()*i] = None
             i+=1
+
+        self.createFx(i-1,10,self.fx1[self.rot],self.fx2[self.rot],self.fx3[self.rot])
 class Fan(Block): # moves backwards pushes behind and kills
     images=imageSpinner(loadImage("blocks/fan.png", gridSize))
     def activate(self):
@@ -420,6 +465,7 @@ class Game():
         self.lvl = None
         self.history = []
         self.levelName = ""
+        self.fxs = []
         #self.images = {}
         #for i in self.blockNames:
         #    image = loadImage(self.pathName+"/"+i+".png", gridSize)
@@ -446,6 +492,8 @@ class Game():
         if self.lvl and (self.mode=="p" or self.mode=="w"):
             self.lvl.draw()
             self.updateTextBox()
+            for fx in self.fxs:
+                fx.draw()
     def win(self):
         self.mode="w"
         win_textbox.html_text=self.levelName+" won in "+str(len(self.history))+" moves"
@@ -510,7 +558,7 @@ menu_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((20, 25),
 levelButtons=[]
 i=0
 for lvlbp in levelBlueprint:
-    levelButtons.append(pygame_gui.elements.UIButton(relative_rect=pygame.Rect((50+(i%8)*120, 275+100*(i//8)), (100, 50)),text=lvlbp,manager=managers[""]))
+    levelButtons.append(pygame_gui.elements.UIButton(relative_rect=pygame.Rect((50+(i%9)*120, 275+100*(i//9)), (100, 50)),text=lvlbp,manager=managers[""]))
     i+=1
 #exit_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((350, 425), (200, 50)),text='Bye Bye',manager=managers[""])
 
