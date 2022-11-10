@@ -22,6 +22,31 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     "blocks":[
     {"type":"pusher","x":1,"y":1,"rot":0},
     ]},
+"dragon I":{"w":6,"h":1, 
+    "blocks":[
+    {"type":"rotator","x":0,"y":0,"rot":1},
+    {"type":"grappler","x":1,"y":0,"rot":2},
+    {"type":"grappler","x":2,"y":0,"rot":1},
+    {"type":"rotator","x":3,"y":0,"rot":2},
+    {"type":"dragon","x":5,"y":0,"rot":1},
+    ]},
+"dragon II":{"w":3,"h":3, #
+    "blocks":[
+    {"type":"rotator","x":0,"y":2,"rot":0},
+    {"type":"grappler","x":2,"y":2,"rot":3},
+    {"type":"grappler","x":2,"y":0,"rot":0},
+    {"type":"dragon","x":0,"y":0,"rot":3},
+    ]},
+"fantest":{"w":6,"h":4, #b6
+    "blocks":[
+    {"type":"fan","x":2,"y":2,"rot":0},
+    {"type":"grappler","x":3,"y":2,"rot":2},
+    {"type":"gear","x":3,"y":1,"rot":2},
+    {"type":"gear","x":3,"y":3,"rot":2},
+    {"type":"pusher","x":2,"y":3,"rot":1},
+    {"type":"pusher","x":1,"y":2,"rot":0},
+    {"type":"pusher","x":2,"y":1,"rot":3},
+    ]},   
 "level 0":{"w":6,"h":4, #b6
     "blocks":[
     {"type":"pusher","x":1,"y":2,"rot":0},
@@ -56,7 +81,7 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"grappler","x":3,"y":1,"rot":0},
     {"type":"gear","x":3,"y":2,"rot":0},
     ]},
-"Level 4":{"w":3,"h":3, # n:I can do it in 12 moves # b8
+"Level 4":{"w":3,"h":3, #  b8
     "blocks":[
     {"type":"grappler","x":0,"y":1,"rot":0},
     {"type":"grappler","x":1,"y":0,"rot":3},
@@ -183,20 +208,36 @@ class Block():
         return (rot==3)-(rot==1)
     def draw(self):
         game_display.blit(self.images[self.rot], (self.x*gridSize+topLeft[0], self.y*gridSize+topLeft[1]))
+    def collision(self,other,rot): 
+        return False
     def activate(self):
         pass
     def rotate(self, direction=1):
         self.rot=(self.rot+direction)%4
-    def move(self,rot):
+    def die(self):
         game.lvl.grid[self.x][self.y] = None
-        self.x += self.dx(rot)
-        self.y += self.dy(rot)
-        if(lvl.inbounds(self.x,self.y)):
-            if game.lvl.grid[self.x][self.y]:
-                game.lvl.grid[self.x][self.y].move(rot)
-            game.lvl.grid[self.x][self.y] = self
+    def move(self,rot):
+        newx = self.x+self.dx(rot)
+        newy = self.y+self.dy(rot)
+        if(lvl.inbounds(newx,newy)):
+            block=game.lvl.grid[newx][newy]
+            if block:
+                if(not block.collision(self,rot)):
+                    if(not self.collision(block,(rot+2)%4)):# if you push a fan, it kills things
+                        game.lvl.grid[newx][newy].move(rot)
+                    game.lvl.grid[newx][newy] = self
+                    game.lvl.grid[self.x][self.y] = None
+                    self.x=newx
+                    self.y=newy
+                else:
+                    pass # Failed to Move
+            else:
+                game.lvl.grid[newx][newy] = self
+                game.lvl.grid[self.x][self.y] = None
+                self.x=newx
+                self.y=newy
         else:
-            pass # die
+            self.die()
     def scan(self):
         i=1
         dx = self.dx(self.rot)
@@ -223,7 +264,6 @@ class Gear(Block):
     def activate(self):
         self.rotate()
         for offset in (0,1),(1,0),(-1,0),(0,-1):
-            print(offset)
             if(lvl.inbounds(self.x+offset[0],self.y+offset[1])):
                 block = game.lvl.grid[self.x+offset[0]][self.y+offset[1]]
                 if(block and block!=self):
@@ -273,11 +313,21 @@ class Grappler(Block):
         else:
             if(lvl.inbounds(self.x+self.dx(),self.y+self.dy())):
                 block = game.lvl.grid[self.x+self.dx()][self.y+self.dy()]
+                self.eaten.x=self.x
+                self.eaten.y=self.y
                 if block:
-                    block.move(self.rot)
-                game.lvl.grid[self.x+self.dx()][self.y+self.dy()]=self.eaten
-                self.eaten.x=self.x+self.dx()
-                self.eaten.y=self.y+self.dy()
+                    if(not block.collision(self.eaten,self.rot)):
+                        block.move(self.rot)
+                        game.lvl.grid[self.x+self.dx()][self.y+self.dy()]=self.eaten
+                        self.eaten.x=self.x+self.dx()
+                        self.eaten.y=self.y+self.dy()
+                    else:
+                        game.lvl.grid[self.x][self.y] = self # the Fan killed us but we back now
+                        # eaten always dies if collision fails
+                else:
+                    game.lvl.grid[self.x+self.dx()][self.y+self.dy()]=self.eaten
+                    self.eaten.x=self.x+self.dx()
+                    self.eaten.y=self.y+self.dy()
             
             self.eaten = None
             self.images = self.images1
@@ -341,7 +391,29 @@ class Killer(Block):
     def activate(self):
         if(lvl.inbounds(self.x+self.dx(),self.y+self.dy())):
             game.lvl.grid[self.x+self.dx()][self.y+self.dy()] = None
-
+class Dragon(Block):
+    images=imageSpinner(loadImage("blocks/dragon.png", gridSize))
+    def activate(self):
+        i=0
+        while(lvl.inbounds(self.x+self.dx()*i,self.y+self.dy()*i)):
+            game.lvl.grid[self.x+self.dx()*i][self.y+self.dy()*i] = None
+            i+=1
+class Fan(Block): # moves backwards pushes behind and kills
+    images=imageSpinner(loadImage("blocks/fan.png", gridSize))
+    def activate(self):
+        if(lvl.inbounds(self.x+self.dx(),self.y+self.dy())):
+            block = game.lvl.grid[self.x+self.dx()][self.y+self.dy()]
+            if(block):
+                block.move(self.rot)
+        self.move((self.rot+2)%4)
+    def collision(self,other,rot): # kills all blocks that moves into the fans
+        if(other.x==self.x+self.dx() and other.y==self.y+self.dy() and (self.rot+2)%4==rot):
+            other.die()
+            return True
+        return False
+# Unmovable blocks, Powergrid, ocean floor, mirror, teleporter, 
+# jag tänker att det är olika världar med olika blocks som används i varje värld, sen kanske en special-värld där allt kombineras
+# Puzzles where you move 
 class Game():
     def __init__(self):
         self.mode = ""
@@ -431,7 +503,7 @@ class Level():
                     pass # ground
 
 
-blockClassHash={"rotator":Rotator,"gear":Gear,"grappler":Grappler,"pusher":Pusher,"killer":Killer,"magnet":Magnet}
+blockClassHash={"rotator":Rotator,"gear":Gear,"grappler":Grappler,"pusher":Pusher,"killer":Killer,"magnet":Magnet,"dragon":Dragon,"fan":Fan}
 
 # Main Menu
 menu_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((20, 25), (200, 75)),html_text="Select level",manager=managers[""])
