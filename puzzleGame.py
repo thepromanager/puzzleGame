@@ -2,6 +2,7 @@ import pygame
 import pygame_gui
 import random
 import time
+import copy
 
 resolution = (1200,700)
 gridSize = 64
@@ -28,7 +29,7 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"killer","x":3,"y":2,"rot":1},
     {"type":"killer","x":4,"y":1,"rot":0},
     ]},
-"level 1":{"w":3,"h":3, # b18
+"level 1":{"w":3,"h":3, # n16
     "blocks":[
     {"type":"rotator","x":0,"y":2,"rot":0},
     {"type":"rotator","x":2,"y":2,"rot":3},
@@ -83,7 +84,7 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"gear","x":7,"y":0,"rot":1},
     {"type":"pusher","x":5,"y":1,"rot":1},
     ]},
-"Level 7":{"w":3,"h":3, # b?
+"Level 7":{"w":3,"h":3,
     "blocks":[
     {"type":"grappler","x":0,"y":1,"rot":0},
     {"type":"magnet","x":2,"y":1,"rot":2},
@@ -114,7 +115,7 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"gear","x":3,"y":2,"rot":1},
     {"type":"killer","x":3,"y":0,"rot":3},
     ]},
-"Level xxx":{"w":5,"h":5, # b33
+"Level xxx":{"w":5,"h":5,
     "blocks":[
     {"type":"rotator","x":1,"y":1,"rot":3},
     {"type":"pusher","x":2,"y":1,"rot":3},
@@ -129,7 +130,7 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"killer","x":3,"y":0,"rot":3},
     {"type":"magnet","x":1,"y":2,"rot":0},
     ]},
-"magnet test":{"w":5,"h":5, # b33
+"magnet test":{"w":5,"h":5,
     "blocks":[
     {"type":"rotator","x":1,"y":1,"rot":3},
     {"type":"pusher","x":2,"y":1,"rot":3},
@@ -142,6 +143,21 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"grappler","x":2,"y":2,"rot":1},
     {"type":"gear","x":3,"y":2,"rot":1},
     {"type":"magnet","x":3,"y":0,"rot":3},
+    {"type":"magnet","x":1,"y":2,"rot":0},
+    ]},
+"cloner test":{"w":5,"h":5,
+    "blocks":[
+    {"type":"rotator","x":1,"y":1,"rot":3},
+    {"type":"pusher","x":2,"y":1,"rot":3},
+    {"type":"grappler","x":3,"y":3,"rot":2},
+    {"type":"gear","x":1,"y":0,"rot":0},
+    {"type":"cloner","x":0,"y":2,"rot":2},
+    {"type":"cloner","x":4,"y":2,"rot":1},
+    {"type":"cloner","x":1,"y":3,"rot":1},
+    {"type":"pusher","x":2,"y":4,"rot":1},
+    {"type":"grappler","x":2,"y":2,"rot":1},
+    {"type":"gear","x":3,"y":2,"rot":1},
+    {"type":"cloner","x":3,"y":0,"rot":3},
     {"type":"magnet","x":1,"y":2,"rot":0},
     ]},
 }
@@ -335,6 +351,37 @@ class Magnet(Block): # causes some problems ig
                 if block and not (block.__class__.__name__=="Magnet" and block.powered==True):
                     block.move((self.rot+direction)%4)
         game.pause(0.1)
+class Cloner(Block):
+    images=imageSpinner(loadImage("blocks/cloner.png", gridSize))
+    def activate(self):
+        block1 = None
+        block2 = None
+        if(lvl.inbounds(self.x+self.dx(),self.y+self.dy())):
+            block1 = game.lvl.grid[self.x+self.dx()][self.y+self.dy()]
+        if(lvl.inbounds(self.x+self.dx((self.rot+1)%4),self.y+self.dy((self.rot+1)%4))):
+            block2 = game.lvl.grid[self.x+self.dx((self.rot+1)%4)][self.y+self.dy((self.rot+1)%4)]
+
+        if block2 and block1:
+            game.lvl.grid[self.x+self.dx()][self.y+self.dy()] = block2
+            block2.x = self.x+self.dx()
+            block2.y = self.y+self.dy()
+            game.lvl.grid[self.x+self.dx((self.rot+1)%4)][self.y+self.dy((self.rot+1)%4)] = block1
+            block1.x = self.x+self.dx((self.rot+1)%4)
+            block1.y = self.y+self.dy((self.rot+1)%4)
+        else:
+            if block2 and lvl.inbounds(self.x+self.dx(),self.y+self.dy()):
+                #game.lvl.grid[self.x+self.dx()][self.y+self.dy()] = block2.__class__(self.x+self.dx(),self.y+self.dy(),bloc k2.rot)
+                block = copy.deepcopy(block2)
+                game.lvl.grid[self.x+self.dx()][self.y+self.dy()] = block
+                block.x = self.x+self.dx()
+                block.y = self.y+self.dy()
+            if block1 and lvl.inbounds(self.x+self.dx((self.rot+1)%4),self.y+self.dy((self.rot+1)%4)):
+                #game.lvl.grid[self.x+self.dx((self.rot+1)%4)][self.y+self.dy((self.rot+1)%4)] = block1.__class__(self.x+self.dx((self.rot+1)%4),self.y+self.dy((self.rot+1)%4),block1.rot)
+                block = copy.deepcopy(block1)
+                game.lvl.grid[self.x+self.dx((self.rot+1)%4)][self.y+self.dy((self.rot+1)%4)] = block
+                block.x = self.x+self.dx((self.rot+1)%4)
+                block.y = self.y+self.dy((self.rot+1)%4)
+
 
 class Killer(Block):
     images=imageSpinner(loadImage("blocks/killer.png", gridSize))
@@ -431,7 +478,7 @@ class Level():
                     pass # ground
 
 
-blockClassHash={"rotator":Rotator,"gear":Gear,"grappler":Grappler,"pusher":Pusher,"killer":Killer,"magnet":Magnet}
+blockClassHash={"rotator":Rotator,"gear":Gear,"grappler":Grappler,"pusher":Pusher,"killer":Killer,"magnet":Magnet,"cloner":Cloner}
 
 # Main Menu
 menu_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((20, 25), (200, 75)),html_text="Select level",manager=managers[""])
