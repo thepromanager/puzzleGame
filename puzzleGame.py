@@ -110,6 +110,7 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"grappler","x":1,"y":4,"rot":1},
     {"type":"pusher","x":1,"y":1,"rot":1},
     ]},
+
 "Level 6":{"w":8,"h":3, # b36
     "blocks":[
     {"type":"grappler","x":0,"y":1,"rot":0},
@@ -181,6 +182,17 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"gear","x":3,"y":2,"rot":1},
     {"type":"magnet","x":3,"y":0,"rot":3},
     {"type":"magnet","x":1,"y":2,"rot":0},
+    ]},
+"Level ?":{"w":5,"h":5, # 16
+    "blocks":[
+    {"type":"magnet","x":4,"y":3,"rot":3},
+    {"type":"magnet","x":3,"y":1,"rot":0},
+    {"type":"magnet","x":1,"y":2,"rot":1},
+    {"type":"gear","x":1,"y":3,"rot":1},
+    {"type":"pusher","x":0,"y":3,"rot":0},
+    {"type":"dragon","x":2,"y":1,"rot":2},
+    {"type":"dragon","x":4,"y":2,"rot":1},
+    {"type":"dragon","x":3,"y":4,"rot":0},
     ]},
 }
 def loadImage(name,r,r2=None):
@@ -283,6 +295,10 @@ class Block():
         if(length>1 and middleImage):
             images+=[[self.x+dx*i,self.y+dy*i,middleImage] for i in range(1,length)]
         game.fxs.append(FX(images,time))
+    def createStaticFx(self,pos,time,image):
+        game.fxs.append(FX([[pos[0],pos[1],image]],time))
+
+    
 class Rotator(Block):
     images=imageSpinner(loadImage("blocks/rotator.png", gridSize))
     fx1=imageSpinner(loadImage("blocks/rotatorFX1.png", gridSize))
@@ -299,7 +315,8 @@ class Gear(Block):
         self.alreadyGeared = False
     def activate(self):
         self.rotate()
-        for offset in (0,1),(1,0),(-1,0),(0,-1):
+        for rot in range(4):
+            offset=[self.dx(rot),self.dy(rot)]
             if(lvl.inbounds(self.x+offset[0],self.y+offset[1])):
                 block = game.lvl.grid[self.x+offset[0]][self.y+offset[1]]
                 if(block and block!=self):
@@ -426,9 +443,11 @@ class Magnet(Block): # causes some problems ig
         game.pause(0.1)
 
 class Killer(Block):
+    bloodImage=loadImage("blocks/blood.png", gridSize)
     images=imageSpinner(loadImage("blocks/killer.png", gridSize))
     def activate(self):
         if(lvl.inbounds(self.x+self.dx(),self.y+self.dy())):
+            self.createStaticFx([self.x+self.dx(),self.y+self.dy()],10,self.bloodImage)
             game.lvl.grid[self.x+self.dx()][self.y+self.dy()] = None
 class Dragon(Block):
     images=imageSpinner(loadImage("blocks/dragon.png", gridSize))
@@ -454,6 +473,7 @@ class Fan(Block): # moves backwards pushes behind and kills
     def collision(self,other,rot): # kills all blocks that moves into the fans
         if(other.x==self.x+self.dx() and other.y==self.y+self.dy() and (self.rot+2)%4==rot):
             other.die()
+            self.createStaticFx([other.x,other.y],10,Killer.bloodImage)
             return True
         return False
 # Unmovable blocks, Powergrid, ocean floor, mirror, teleporter, 
