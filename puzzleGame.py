@@ -95,6 +95,8 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"gear","x":2,"y":4,"rot":3},
     {"type":"grappler","x":3,"y":1,"rot":0},
     {"type":"gear","x":3,"y":2,"rot":0},
+    {"type":"water","x":0,"y":0},
+    {"type":"water","x":4,"y":0},
     ]},
 "Level 4":{"w":3,"h":3, # b8
     "blocks":[
@@ -297,6 +299,8 @@ class Block():
                 game.lvl.grid[self.x][self.y] = None
                 self.x=newx
                 self.y=newy
+            if not lvl.onGround(newx,newy):
+                self.die()
         else:
             self.die()
     def scan(self):
@@ -615,19 +619,32 @@ class Game():
         #time.sleep(secs)
 class Level():
 
+    grassImage = loadImage("blocks/grass.png", gridSize)
+
     def __init__(self, blueprint):
         self.width = blueprint["w"]
         self.height = blueprint["h"]
         self.grid = []
+        self.groundGrid = []
         for i in range(self.width):
             self.grid.append([None]*self.height)
+        if "groundGrid" in blueprint:
+            self.groundGrid = blueprint["groundGrid"]
+        else:
+           for i in range(self.width):
+                self.groundGrid.append([True]*self.height)
         self.setupBlocks(blueprint)
     def inbounds(self,x,y):
         return (0<=x<self.width and 0<=y<self.height)
+    def onGround(self,x,y): # ingrounds
+        return (0<=x<self.width and 0<=y<self.height)
     def setupBlocks(self,blueprint):
         for blockPrint in blueprint["blocks"]:
-            block = blockClassHash[blockPrint["type"]](blockPrint["x"],blockPrint["y"],blockPrint["rot"])
-            self.grid[block.x][block.y]=block
+            if blockPrint["type"]=="water":
+                self.groundGrid[blockPrint["x"]][blockPrint["y"]]=False
+            else:
+                block = blockClassHash[blockPrint["type"]](blockPrint["x"],blockPrint["y"],blockPrint["rot"])
+                self.grid[block.x][block.y]=block
         self.alignBoxes()
     def alignBoxes(self):
         topLeft[0]=resolution[0]/2-self.width*gridSize/2
@@ -646,10 +663,17 @@ class Level():
                     return False
         return True
     def draw(self):
+        for x in range(self.width):
+            for y in range(self.height):
+                if self.groundGrid[x][y]:
+                    game_display.blit(self.grassImage, (x*gridSize+topLeft[0], y*gridSize+topLeft[1]))
+
+        gridColor = (2,2,2)
         for i in range(self.height+1):
-            pygame.draw.line(game_display, (200,200,200), (topLeft[0],topLeft[1]+gridSize*i), (topLeft[0]+self.width*gridSize, topLeft[1]+gridSize*i), 1)
+            pygame.draw.line(game_display, gridColor, (topLeft[0],topLeft[1]+gridSize*i), (topLeft[0]+self.width*gridSize, topLeft[1]+gridSize*i), 1)
         for i in range(self.width+1):
-            pygame.draw.line(game_display, (200,200,200), (topLeft[0]+gridSize*i,topLeft[1]), (topLeft[0]+gridSize*i, topLeft[1]+self.height*gridSize), 1)
+            pygame.draw.line(game_display, gridColor, (topLeft[0]+gridSize*i,topLeft[1]), (topLeft[0]+gridSize*i, topLeft[1]+self.height*gridSize), 1)
+        
         for col in self.grid:
             for block in col:
                 if(block):
