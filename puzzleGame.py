@@ -23,6 +23,45 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     "blocks":[
     {"type":"pusher","x":1,"y":1,"rot":0},
     ]},
+"dragon I":{"w":7,"h":1, 
+    "blocks":[
+    {"type":"rotator","x":0,"y":0,"rot":1},
+    {"type":"grappler","x":1,"y":0,"rot":2},
+    {"type":"grappler","x":2,"y":0,"rot":1},
+    {"type":"rotator","x":3,"y":0,"rot":2},
+    {"type":"dragon","x":5,"y":0,"rot":1},
+    {"type":"bomb","x":6,"y":0,"rot":0},
+    ]},
+"dragon II":{"w":3,"h":3, # b14
+    "blocks":[
+    {"type":"rotator","x":0,"y":2,"rot":0},
+    {"type":"grappler","x":2,"y":2,"rot":3},
+    {"type":"grappler","x":2,"y":0,"rot":0},
+    {"type":"dragon","x":0,"y":0,"rot":3},
+    ]},
+"fantest":{"w":6,"h":4, # b22
+    "blocks":[
+    {"type":"fan","x":2,"y":2,"rot":0},
+    {"type":"grappler","x":3,"y":2,"rot":2},
+    {"type":"gear","x":3,"y":1,"rot":2},
+    {"type":"gear","x":3,"y":3,"rot":2},
+    {"type":"pusher","x":2,"y":3,"rot":1},
+    {"type":"pusher","x":1,"y":2,"rot":0},
+    {"type":"pusher","x":2,"y":1,"rot":3},
+    ]},   
+"poff":{"w":6,"h":5, #b6
+    "blocks":[
+    {"type":"fan","x":0,"y":0,"rot":3},
+    {"type":"fan","x":0,"y":1,"rot":3},
+    {"type":"fan","x":0,"y":3,"rot":0},
+    {"type":"fan","x":1,"y":0,"rot":3},
+    {"type":"fan","x":1,"y":1,"rot":3},
+    {"type":"fan","x":1,"y":3,"rot":0},
+    {"type":"fan","x":3,"y":0,"rot":3},
+    {"type":"fan","x":3,"y":1,"rot":3},
+    {"type":"fan","x":3,"y":3,"rot":0},
+    {"type":"killer","x":4,"y":4,"rot":0},
+    ]},   
 "level 0":{"w":6,"h":4, #b6
     "blocks":[
     {"type":"pusher","x":1,"y":2,"rot":0},
@@ -49,7 +88,7 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"grappler","x":3,"y":1,"rot":0},
     {"type":"gear","x":3,"y":2,"rot":0},
     ]},
-"Level 3b":{"w":5,"h":5, # b45 actually b36:( 
+"Level 3b":{"w":5,"h":5, # b45 actually b36:(
     "blocks":[
     {"type":"pusher","x":1,"y":4,"rot":1},
     {"type":"pusher","x":0,"y":4,"rot":2},
@@ -57,7 +96,7 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"grappler","x":3,"y":1,"rot":0},
     {"type":"gear","x":3,"y":2,"rot":0},
     ]},
-"Level 4":{"w":3,"h":3, # n:I can do it in 12 moves # b8
+"Level 4":{"w":3,"h":3, # b8
     "blocks":[
     {"type":"grappler","x":0,"y":1,"rot":0},
     {"type":"grappler","x":1,"y":0,"rot":3},
@@ -151,14 +190,21 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"pusher","x":2,"y":1,"rot":3},
     {"type":"grappler","x":3,"y":3,"rot":2},
     {"type":"gear","x":1,"y":0,"rot":0},
-    {"type":"cloner","x":0,"y":2,"rot":2},
+    {"type":"ghost","x":0,"y":2,"rot":0},
     {"type":"cloner","x":4,"y":2,"rot":1},
     {"type":"cloner","x":1,"y":3,"rot":1},
     {"type":"pusher","x":2,"y":4,"rot":1},
     {"type":"grappler","x":2,"y":2,"rot":1},
     {"type":"gear","x":3,"y":2,"rot":1},
     {"type":"cloner","x":3,"y":0,"rot":3},
-    {"type":"magnet","x":1,"y":2,"rot":0},
+    {"type":"ghost","x":1,"y":2,"rot":0},
+    ]},
+"cloner lvl":{"w":4,"h":4, # b18
+    "blocks":[
+    {"type":"pusher","x":1,"y":0,"rot":3},
+    {"type":"grappler","x":1,"y":2,"rot":1},
+    {"type":"grappler","x":2,"y":2,"rot":2},
+    {"type":"cloner","x":3,"y":2,"rot":1},
     ]},
 }
 def loadImage(name,r,r2=None):
@@ -172,6 +218,7 @@ def imageSpinner(image):
     for i in range(1,4):
         images.append(pygame.transform.rotate(image, 90*i))
     return images
+
 class Sound():
     v=1
     pygame.mixer.init(buffer=32)
@@ -182,7 +229,18 @@ class Sound():
     #pygame.mixer.music.load("data/sound/music.wav") #must be wav 16bit and stuff?
     #pygame.mixer.music.set_volume(v*0.1)
     #pygame.mixer.music.play(-1)
-
+class FX():
+    def __init__(self, images,time):
+        self.images = images
+        self.time = time
+    def draw(self):
+        
+        if(self.time<1):
+            game.fxs.remove(self)
+        else:  
+            for image in self.images:
+                game_display.blit(image[2], (image[0]*gridSize+topLeft[0], image[1]*gridSize+topLeft[1]))
+        self.time-=1
 class Block():
 
     def __init__(self, x, y,rot):
@@ -199,20 +257,36 @@ class Block():
         return (rot==3)-(rot==1)
     def draw(self):
         game_display.blit(self.images[self.rot], (self.x*gridSize+topLeft[0], self.y*gridSize+topLeft[1]))
+    def collision(self,other,rot): 
+        return True
     def activate(self):
         pass
     def rotate(self, direction=1):
         self.rot=(self.rot+direction)%4
-    def move(self,rot):
+    def die(self):
         game.lvl.grid[self.x][self.y] = None
-        self.x += self.dx(rot)
-        self.y += self.dy(rot)
-        if(lvl.inbounds(self.x,self.y)):
-            if game.lvl.grid[self.x][self.y]:
-                game.lvl.grid[self.x][self.y].move(rot)
-            game.lvl.grid[self.x][self.y] = self
+    def move(self,rot):
+        newx = self.x+self.dx(rot)
+        newy = self.y+self.dy(rot)
+        if(lvl.inbounds(newx,newy)):
+            block=game.lvl.grid[newx][newy]
+            if block:
+                if(block.collision(self,rot)):
+                    if(self.collision(block,(rot+2)%4)):# if you push a fan, it kills things
+                        game.lvl.grid[newx][newy].move(rot)
+                    game.lvl.grid[newx][newy] = self
+                    game.lvl.grid[self.x][self.y] = None
+                    self.x=newx
+                    self.y=newy
+                else:
+                    pass # Failed to Move
+            else:
+                game.lvl.grid[newx][newy] = self
+                game.lvl.grid[self.x][self.y] = None
+                self.x=newx
+                self.y=newy
         else:
-            pass # die
+            self.die()
     def scan(self):
         i=1
         dx = self.dx(self.rot)
@@ -220,17 +294,37 @@ class Block():
         while(True):
             if(not lvl.inbounds(self.x+i*dx,self.y+i*dy)):
                 return None
-            if(game.lvl.grid[self.x+i*dx][self.y+i*dy]==None):
+            gridTarget = game.lvl.grid[self.x+i*dx][self.y+i*dy]
+            if(gridTarget==None or (gridTarget.__class__.__name__=="Ghost" and gridTarget.phased)):
                 i+=1
             else:
                 return game.lvl.grid[self.x+i*dx][self.y+i*dy]
-
+    def createFx(self,length,time,startImage,middleImage=None,endImage=None):
+        dx=self.dx()
+        dy=self.dy()
+        images=[[self.x,self.y,startImage]]
+        if(length>0 and endImage):
+            images+=[[self.x+dx*(length),self.y+dy*length,endImage]]
+        if(length>1 and middleImage):
+            images+=[[self.x+dx*i,self.y+dy*i,middleImage] for i in range(1,length)]
+        game.fxs.append(FX(images,time))
+    def copy(self):
+        copyobj = self.__class__(self.x,self.y,self.rot)
+        for name, attr in self.__dict__.items():
+            if hasattr(attr, 'copy') and callable(getattr(attr, 'copy')):
+                copyobj.__dict__[name] = attr.copy()
+            else:
+                copyobj.__dict__[name] = copy.deepcopy(attr)
+        return copyobj
 class Rotator(Block):
     images=imageSpinner(loadImage("blocks/rotator.png", gridSize))
+    fx1=imageSpinner(loadImage("blocks/rotatorFX1.png", gridSize))
+    fx2=imageSpinner(loadImage("blocks/rotatorFX2.png", gridSize))
     def activate(self):
         block = self.scan()
         if(block):
             block.rotate()
+            self.createFx(abs(block.x+block.y-self.x-self.y),7,self.images[self.rot],self.fx1[self.rot],self.fx2[self.rot])
 class Gear(Block):
     images=imageSpinner(loadImage("blocks/gear.png", gridSize))
     def __init__(self,*args):
@@ -239,7 +333,6 @@ class Gear(Block):
     def activate(self):
         self.rotate()
         for offset in (0,1),(1,0),(-1,0),(0,-1):
-            print(offset)
             if(lvl.inbounds(self.x+offset[0],self.y+offset[1])):
                 block = game.lvl.grid[self.x+offset[0]][self.y+offset[1]]
                 if(block and block!=self):
@@ -273,6 +366,9 @@ class Pusher(Block):
 class Grappler(Block):
     images1=imageSpinner(loadImage("blocks/grappler.png", gridSize))
     images2=imageSpinner(loadImage("blocks/eaten.png", gridSize))
+    fx1=imageSpinner(loadImage("blocks/grapplerFX1.png", gridSize))
+    fx2=imageSpinner(loadImage("blocks/grapplerFX2.png", gridSize))
+    fx3=imageSpinner(loadImage("blocks/grapplerFX3.png", gridSize))
     def __init__(self,*args):
         super().__init__(*args)
         self.eaten = None
@@ -284,16 +380,27 @@ class Grappler(Block):
                 game.lvl.grid[block.x][block.y] = None
                 self.eaten = block
                 self.images = self.images2
+                self.createFx(abs(block.x+block.y-self.x-self.y),10,self.fx1[self.rot],self.fx2[self.rot],self.fx3[self.rot])
             else:
                 pass # move to edge?
         else:
             if(lvl.inbounds(self.x+self.dx(),self.y+self.dy())):
                 block = game.lvl.grid[self.x+self.dx()][self.y+self.dy()]
+                self.eaten.x=self.x
+                self.eaten.y=self.y
                 if block:
-                    block.move(self.rot)
-                game.lvl.grid[self.x+self.dx()][self.y+self.dy()]=self.eaten
-                self.eaten.x=self.x+self.dx()
-                self.eaten.y=self.y+self.dy()
+                    if(block.collision(self.eaten,self.rot)):
+                        block.move(self.rot)
+                        game.lvl.grid[self.x+self.dx()][self.y+self.dy()]=self.eaten
+                        self.eaten.x=self.x+self.dx()
+                        self.eaten.y=self.y+self.dy()
+                    else:
+                        game.lvl.grid[self.x][self.y] = self # the Fan killed us but we back now
+                        # eaten always dies if collision fails
+                else:
+                    game.lvl.grid[self.x+self.dx()][self.y+self.dy()]=self.eaten
+                    self.eaten.x=self.x+self.dx()
+                    self.eaten.y=self.y+self.dy()
             
             self.eaten = None
             self.images = self.images1
@@ -370,24 +477,71 @@ class Cloner(Block):
             block1.y = self.y+self.dy((self.rot+1)%4)
         else:
             if block2 and lvl.inbounds(self.x+self.dx(),self.y+self.dy()):
-                #game.lvl.grid[self.x+self.dx()][self.y+self.dy()] = block2.__class__(self.x+self.dx(),self.y+self.dy(),bloc k2.rot)
-                block = copy.deepcopy(block2)
+                block = block2.copy()
                 game.lvl.grid[self.x+self.dx()][self.y+self.dy()] = block
                 block.x = self.x+self.dx()
                 block.y = self.y+self.dy()
             if block1 and lvl.inbounds(self.x+self.dx((self.rot+1)%4),self.y+self.dy((self.rot+1)%4)):
-                #game.lvl.grid[self.x+self.dx((self.rot+1)%4)][self.y+self.dy((self.rot+1)%4)] = block1.__class__(self.x+self.dx((self.rot+1)%4),self.y+self.dy((self.rot+1)%4),block1.rot)
-                block = copy.deepcopy(block1)
+                block = block1.copy()
                 game.lvl.grid[self.x+self.dx((self.rot+1)%4)][self.y+self.dy((self.rot+1)%4)] = block
                 block.x = self.x+self.dx((self.rot+1)%4)
                 block.y = self.y+self.dy((self.rot+1)%4)
-
-
+class Bomb(Block):
+    images=imageSpinner(loadImage("blocks/bomb.png", gridSize))
+    def activate(self):
+        for offset in (0,1),(1,0),(-1,0),(0,-1):
+            if(lvl.inbounds(self.x+offset[0],self.y+offset[1])):
+                game.lvl.grid[self.x+offset[0]][self.y+offset[1]].die()
+        self.die()
+class Ghost(Block):
+    images1=imageSpinner(loadImage("blocks/ghost.png", gridSize))
+    images2=imageSpinner(loadImage("blocks/ghost2.png", gridSize))
+    def __init__(self,*args):
+        super().__init__(*args)
+        self.images = self.images1
+        self.phased = False
+    def activate(self):
+        self.phased = not self.phased
+        self.images = [self.images1,self.images2][self.phased]
+    def collision(self,other,rot):
+        if self.phased:
+            self.die()
+            return False
+        return True
 class Killer(Block):
     images=imageSpinner(loadImage("blocks/killer.png", gridSize))
     def activate(self):
         if(lvl.inbounds(self.x+self.dx(),self.y+self.dy())):
             game.lvl.grid[self.x+self.dx()][self.y+self.dy()] = None
+class Dragon(Block):
+    images=imageSpinner(loadImage("blocks/dragon.png", gridSize))
+    fx1=imageSpinner(loadImage("blocks/dragonFire.png", gridSize))
+    fx2=imageSpinner(loadImage("blocks/dragonFX1.png", gridSize))
+    fx3=imageSpinner(loadImage("blocks/dragonFX2.png", gridSize))
+
+    def activate(self):
+        i=1
+        while(lvl.inbounds(self.x+self.dx()*i,self.y+self.dy()*i)):
+            game.lvl.grid[self.x+self.dx()*i][self.y+self.dy()*i] = None
+            i+=1
+
+        self.createFx(i-1,10,self.fx1[self.rot],self.fx2[self.rot],self.fx3[self.rot])
+class Fan(Block): # moves backwards pushes behind and kills
+    images=imageSpinner(loadImage("blocks/fan.png", gridSize))
+    def activate(self):
+        if(lvl.inbounds(self.x+self.dx(),self.y+self.dy())):
+            block = game.lvl.grid[self.x+self.dx()][self.y+self.dy()]
+            if(block):
+                block.move(self.rot)
+        self.move((self.rot+2)%4)
+    def collision(self,other,rot): # kills all blocks that moves into the fans
+        if(other.x==self.x+self.dx() and other.y==self.y+self.dy() and (self.rot+2)%4==rot):
+            other.die()
+            return False
+        return True
+# Unmovable blocks, Powergrid, ocean floor, mirror, teleporter, 
+# jag tänker att det är olika världar med olika blocks som används i varje värld, sen kanske en special-värld där allt kombineras
+# Puzzles where you move 
 
 class Game():
     def __init__(self):
@@ -395,6 +549,7 @@ class Game():
         self.lvl = None
         self.history = []
         self.levelName = ""
+        self.fxs = []
         #self.images = {}
         #for i in self.blockNames:
         #    image = loadImage(self.pathName+"/"+i+".png", gridSize)
@@ -405,6 +560,7 @@ class Game():
             self.history.pop()
             for move in self.history:
                 self.doMove(move)
+            self.fxs=[]
 
     def doMove(self,move):
         self.lvl.grid[move[0]][move[1]].activate()
@@ -421,6 +577,8 @@ class Game():
         if self.lvl and (self.mode=="p" or self.mode=="w"):
             self.lvl.draw()
             self.updateTextBox()
+            for fx in self.fxs:
+                fx.draw()
     def win(self):
         self.mode="w"
         win_textbox.html_text=self.levelName+" won in "+str(len(self.history))+" moves"
@@ -478,14 +636,14 @@ class Level():
                     pass # ground
 
 
-blockClassHash={"rotator":Rotator,"gear":Gear,"grappler":Grappler,"pusher":Pusher,"killer":Killer,"magnet":Magnet,"cloner":Cloner}
+blockClassHash={"rotator":Rotator,"gear":Gear,"grappler":Grappler,"pusher":Pusher,"killer":Killer,"magnet":Magnet,"cloner":Cloner,"dragon":Dragon,"fan":Fan,"bomb":Bomb,"ghost":Ghost}
 
 # Main Menu
 menu_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((20, 25), (200, 75)),html_text="Select level",manager=managers[""])
 levelButtons=[]
 i=0
 for lvlbp in levelBlueprint:
-    levelButtons.append(pygame_gui.elements.UIButton(relative_rect=pygame.Rect((50+(i%8)*120, 275+100*(i//8)), (100, 50)),text=lvlbp,manager=managers[""]))
+    levelButtons.append(pygame_gui.elements.UIButton(relative_rect=pygame.Rect((50+(i%9)*120, 275+100*(i//9)), (100, 50)),text=lvlbp,manager=managers[""]))
     i+=1
 #exit_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((350, 425), (200, 50)),text='Bye Bye',manager=managers[""])
 
