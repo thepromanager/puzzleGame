@@ -193,11 +193,11 @@ levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill
     {"type":"pusher","x":2,"y":1,"rot":3},
     {"type":"grappler","x":3,"y":3,"rot":2},
     {"type":"gear","x":1,"y":0,"rot":0},
-    {"type":"ghost","x":0,"y":2,"rot":0},
+    {"type":"swapper","x":2,"y":2,"rot":0},
     {"type":"cloner","x":4,"y":2,"rot":1},
     {"type":"cloner","x":1,"y":3,"rot":1},
     {"type":"pusher","x":2,"y":4,"rot":1},
-    {"type":"grappler","x":2,"y":2,"rot":1},
+    {"type":"grappler","x":0,"y":2,"rot":1},
     {"type":"gear","x":3,"y":2,"rot":1},
     {"type":"cloner","x":3,"y":0,"rot":3},
     {"type":"ghost","x":1,"y":2,"rot":0},
@@ -277,6 +277,9 @@ class Block():
         pass
     def rotate(self, direction=1):
         self.rot=(self.rot+direction)%4
+    def flip(self, is_vertical):
+        if (self.rot == 1 or self.rot == 3) == (is_vertical):
+            self.rot = (self.rot+2)%4
     def die(self):
         game.lvl.grid[self.x][self.y] = None
     def move(self,rot):
@@ -431,6 +434,19 @@ class Grappler(Block):
         super().rotate(direction)
         if(self.eaten):
             self.eaten.rot = (self.eaten.rot + direction)%4
+class Swapper(Block):
+    images=imageSpinner(loadImage("blocks/swapper.png", gridSize))
+    fx1=imageSpinner(loadImage("blocks/swapperFX1.png", gridSize))
+    def activate(self):
+        block = self.scan()
+        if block:
+            self.createFx(abs(block.x+block.y-self.x-self.y),10,self.images[self.rot],self.fx1[self.rot])
+            game.lvl.grid[self.x][self.y], game.lvl.grid[block.x][block.y] = block, self
+            block.x, self.x = self.x, block.x
+            block.y, self.y = self.y, block.y
+            is_vertical = (self.rot == 1 or self.rot == 3)
+            block.flip(is_vertical)
+            self.flip(is_vertical)
 class Magnet(Block): # causes some problems ig
     images1=imageSpinner(loadImage("blocks/magnet.png", gridSize))
     images2=imageSpinner(loadImage("blocks/magnet2.png", gridSize))
@@ -508,6 +524,11 @@ class Cloner(Block):
                 game.lvl.grid[self.x+self.dx((self.rot+1)%4)][self.y+self.dy((self.rot+1)%4)] = block
                 block.x = self.x+self.dx((self.rot+1)%4)
                 block.y = self.y+self.dy((self.rot+1)%4)
+    def flip(self, is_vertical):
+        if (self.rot==1 or self.rot==3) == is_vertical:
+            self.rot=(self.rot+1)%4
+        else:
+            self.rot=(self.rot-1)%4
 class Bomb(Block):
     images=imageSpinner(loadImage("blocks/bomb.png", gridSize))
     def activate(self):
@@ -682,7 +703,7 @@ class Level():
                     pass # ground
 
 
-blockClassHash={"rotator":Rotator,"gear":Gear,"grappler":Grappler,"pusher":Pusher,"killer":Killer,"magnet":Magnet,"cloner":Cloner,"dragon":Dragon,"fan":Fan,"bomb":Bomb,"ghost":Ghost}
+blockClassHash={"rotator":Rotator,"gear":Gear,"grappler":Grappler,"pusher":Pusher,"killer":Killer,"magnet":Magnet,"cloner":Cloner,"dragon":Dragon,"fan":Fan,"bomb":Bomb,"ghost":Ghost,"swapper":Swapper}
 
 # Main Menu
 menu_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((20, 25), (200, 75)),html_text="Select level",manager=managers[""])
