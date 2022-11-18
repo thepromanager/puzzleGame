@@ -2,7 +2,7 @@ import pygame
 import pygame_gui
 import random
 import time
-import copy
+import copy # Deepcopy istället??
 
 resolution = (1200,700)
 gridSize = 64
@@ -17,6 +17,7 @@ managers={
     "":pygame_gui.UIManager(resolution), #Main menu
     "p":pygame_gui.UIManager(resolution), #puzzle
     "w":pygame_gui.UIManager(resolution), #win screen
+    "e":pygame_gui.UIManager(resolution), #level editor
 }
 levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill ha ett annat mål
 "level -1":{"w":5,"h":3, #b4
@@ -621,7 +622,7 @@ class Game():
     def draw(self):
         game_display.fill((100,100,200))
         manager.draw_ui(game_display)
-        if self.lvl and (self.mode=="p" or self.mode=="w"):
+        if self.lvl and (self.mode=="p" or self.mode=="w" or self.mode=="e"):
             self.lvl.draw()
             self.updateTextBox()
             for fx in self.fxs:
@@ -718,18 +719,28 @@ for lvlbp in levelBlueprint:
 #    pygame_gui.elements.UIButton(relative_rect=pygame.Rect((50, 50), (100, 50)),text='Back',manager=managers["s"]),
 #]
 
-# Building
+# Level
 level_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((800, 125), (250, 75)),html_text="Playing",manager=managers["p"])
 back_button1 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 505), (200, 100)),text='Back to Level select',manager=managers["p"])
 undo_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((400, 505), (200, 100)),text='Undo',manager=managers["p"])
 reset_button1 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((600, 505), (200, 100)),text='Reset',manager=managers["p"])
+edit_button1 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 105), (200, 100)),text='Edit level',manager=managers["p"])
 
+
+# Win
 win_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((800, 125), (250, 75)),html_text="Win",manager=managers["w"])
 back_button2 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 505), (200, 100)),text='Back to Level select',manager=managers["w"])
 next_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((900, 505), (200, 100)),text='Next Level',manager=managers["w"])
 reset_button2 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((600, 505), (200, 100)),text='Reset',manager=managers["w"])
+edit_button2 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 105), (200, 100)),text='Edit level',manager=managers["w"])
 
-# Shop
+# Editor
+play_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 105), (200, 100)),text='Play level',manager=managers["e"])
+back_button3 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 505), (200, 100)),text='Back to Level select',manager=managers["e"])
+#undo_button2 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((400, 505), (200, 100)),text='Undo',manager=managers["e"])
+#reset_button3 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((600, 505), (200, 100)),text='Reset',manager=managers["e"])
+block_selector = pygame_gui.elements.UIDropDownMenu(list(blockClassHash),starting_option="rotator",relative_rect=pygame.Rect((100, 205), (200, 100)),manager=managers["e"])
+
 
 game = Game()
 
@@ -740,7 +751,7 @@ while jump_out == False:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             jump_out = True    
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and game.mode=="p":
+        if event.type == pygame.MOUSEBUTTONDOWN and (event.button == 1 or event.button == 3) and (game.mode=="p" or game.mode=="e"):
             (mouseX,mouseY)=pygame.mouse.get_pos()
             mouseX=int((mouseX-topLeft[0])//gridSize)
             mouseY=int((mouseY-topLeft[1])//gridSize)
@@ -748,8 +759,17 @@ while jump_out == False:
             if(lvl.inbounds(mouseX,mouseY)):
                 block=lvl.grid[mouseX][mouseY]
                 if(block):
-                    game.history.append((mouseX,mouseY))
-                    game.doMove((mouseX,mouseY))
+                    if(game.mode=="p"):
+                        game.history.append((mouseX,mouseY))
+                        game.doMove((mouseX,mouseY))
+                    if(game.mode=="e" and event.button == 1):
+                        block.rotate()
+                    if(game.mode=="e" and event.button == 3):
+                        game.lvl.grid[mouseX][mouseY]=None
+                else:
+                    if(game.mode=="e" and event.button == 1):
+                        newBlock = blockClassHash[block_selector.selected_option](mouseX,mouseY,0)
+                        game.lvl.grid[mouseX][mouseY]=newBlock
                     
 
 
@@ -767,10 +787,15 @@ while jump_out == False:
                     game.start()
                 if event.ui_element == undo_button:
                     game.undo()
-                if event.ui_element == back_button1 or event.ui_element == back_button2:
+                if event.ui_element == back_button1 or event.ui_element == back_button2 or event.ui_element == back_button3:
                     game.mode=""
                 if event.ui_element == reset_button1 or event.ui_element == reset_button2:
                     game.start()
+                if event.ui_element == edit_button1 or event.ui_element == edit_button2:
+                    game.mode="e"
+                if event.ui_element == play_button:
+                    game.mode="p"
+                    game.history=[]
                 if event.ui_element == next_button:
                     ks=list(levelBlueprint.keys())
                     inx = ks.index(game.levelName)+1
