@@ -2,7 +2,8 @@ import pygame
 import pygame_gui
 import random
 import time
-import copy # Deepcopy istället??
+import copy
+import json
 
 resolution = (1200,700)
 gridSize = 64
@@ -19,209 +20,9 @@ managers={
     "w":pygame_gui.UIManager(resolution), #win screen
     "e":pygame_gui.UIManager(resolution), #level editor
 }
-levelBlueprint={ #målet är att döda alla # alla banor är möjliga # jag vill ha ett annat mål
-"level -1":{"w":5,"h":3, #b4
-    "blocks":[
-    {"type":"pusher","x":1,"y":1,"rot":0},
-    ]},
-"dragon I":{"w":7,"h":1, 
-    "blocks":[
-    {"type":"rotator","x":0,"y":0,"rot":1},
-    {"type":"grappler","x":1,"y":0,"rot":2},
-    {"type":"grappler","x":2,"y":0,"rot":1},
-    {"type":"rotator","x":3,"y":0,"rot":2},
-    {"type":"dragon","x":5,"y":0,"rot":1},
-    {"type":"bomb","x":6,"y":0,"rot":0},
-    ]},
-"dragon II":{"w":3,"h":3, # b14
-    "blocks":[
-    {"type":"rotator","x":0,"y":2,"rot":0},
-    {"type":"grappler","x":2,"y":2,"rot":3},
-    {"type":"grappler","x":2,"y":0,"rot":0},
-    {"type":"dragon","x":0,"y":0,"rot":3},
-    ]},
-"fantest":{"w":6,"h":4, # b22
-    "blocks":[
-    {"type":"fan","x":2,"y":2,"rot":0},
-    {"type":"grappler","x":3,"y":2,"rot":2},
-    {"type":"gear","x":3,"y":1,"rot":2},
-    {"type":"gear","x":3,"y":3,"rot":2},
-    {"type":"pusher","x":2,"y":3,"rot":1},
-    {"type":"pusher","x":1,"y":2,"rot":0},
-    {"type":"pusher","x":2,"y":1,"rot":3},
-    ]},   
-"poff":{"w":6,"h":5, #b6
-    "blocks":[
-    {"type":"fan","x":0,"y":0,"rot":3},
-    {"type":"fan","x":0,"y":1,"rot":3},
-    {"type":"fan","x":0,"y":3,"rot":0},
-    {"type":"fan","x":1,"y":0,"rot":3},
-    {"type":"fan","x":1,"y":1,"rot":3},
-    {"type":"fan","x":1,"y":3,"rot":0},
-    {"type":"fan","x":3,"y":0,"rot":3},
-    {"type":"fan","x":3,"y":1,"rot":3},
-    {"type":"fan","x":3,"y":3,"rot":0},
-    {"type":"killer","x":4,"y":4,"rot":0},
-    ]},   
-"level 0":{"w":6,"h":4, #b6
-    "blocks":[
-    {"type":"pusher","x":1,"y":2,"rot":0},
-    {"type":"killer","x":3,"y":2,"rot":1},
-    {"type":"killer","x":4,"y":1,"rot":0},
-    ]},
-"level 1":{"w":3,"h":3, # n16
-    "blocks":[
-    {"type":"rotator","x":0,"y":2,"rot":0},
-    {"type":"rotator","x":2,"y":2,"rot":3},
-    {"type":"rotator","x":2,"y":0,"rot":0},
-    {"type":"pusher","x":0,"y":0,"rot":2},
-    ]},
-"Level 2":{"w":2,"h":2, # b12
-    "blocks":[
-    {"type":"rotator","x":0,"y":1,"rot":0},
-    {"type":"grappler","x":1,"y":0,"rot":3},
-    {"type":"gear","x":1,"y":1,"rot":0},
-    {"type":"pusher","x":0,"y":0,"rot":3},
-    ]},
-"Level 3":{"w":5,"h":5, # b19
-    "blocks":[
-    {"type":"pusher","x":0,"y":4,"rot":1},
-    {"type":"grappler","x":3,"y":1,"rot":0},
-    {"type":"gear","x":3,"y":2,"rot":0},
-    ]},
-"Level 3b":{"w":5,"h":5, # b45 actually b36:(
-    "blocks":[
-    {"type":"pusher","x":1,"y":4,"rot":1},
-    {"type":"pusher","x":0,"y":4,"rot":2},
-    {"type":"gear","x":2,"y":4,"rot":3},
-    {"type":"grappler","x":3,"y":1,"rot":0},
-    {"type":"gear","x":3,"y":2,"rot":0},
-    {"type":"water","x":0,"y":0},
-    {"type":"water","x":4,"y":0},
-    ]},
-"Level 4":{"w":3,"h":3, # b8
-    "blocks":[
-    {"type":"grappler","x":0,"y":1,"rot":0},
-    {"type":"grappler","x":1,"y":0,"rot":3},
-    {"type":"grappler","x":2,"y":1,"rot":2},
-    {"type":"pusher","x":1,"y":2,"rot":1},
-    {"type":"gear","x":1,"y":1,"rot":0},
-    ]},
-"Level 5":{"w":5,"h":5, # b17
-    "blocks":[
-    {"type":"grappler","x":2,"y":2,"rot":0},
-    {"type":"grappler","x":4,"y":2,"rot":3},
-    {"type":"grappler","x":4,"y":4,"rot":2},
-    {"type":"grappler","x":1,"y":4,"rot":1},
-    {"type":"pusher","x":1,"y":1,"rot":1},
-    ]},
-
-"Level 6":{"w":8,"h":3, # b36
-    "blocks":[
-    {"type":"grappler","x":0,"y":1,"rot":0},
-    {"type":"grappler","x":2,"y":1,"rot":2},
-    {"type":"killer","x":1,"y":1,"rot":3},
-    {"type":"killer","x":3,"y":1,"rot":1},
-    {"type":"grappler","x":4,"y":2,"rot":2},
-    {"type":"killer","x":6,"y":2,"rot":2},
-    {"type":"gear","x":7,"y":0,"rot":1},
-    {"type":"pusher","x":5,"y":1,"rot":1},
-    ]},
-"Level 7":{"w":3,"h":3,
-    "blocks":[
-    {"type":"grappler","x":0,"y":1,"rot":0},
-    {"type":"magnet","x":2,"y":1,"rot":2},
-    {"type":"gear","x":1,"y":2,"rot":1},
-    {"type":"pusher","x":2,"y":0,"rot":1},
-    ]},
-"Level x":{"w":5,"h":5, # b25
-    "blocks":[
-    {"type":"rotator","x":1,"y":1,"rot":3},
-    {"type":"pusher","x":2,"y":1,"rot":3},
-    {"type":"grappler","x":3,"y":3,"rot":2},
-    {"type":"gear","x":1,"y":0,"rot":0},
-    {"type":"rotator","x":1,"y":3,"rot":1},
-    {"type":"pusher","x":2,"y":4,"rot":2},
-    {"type":"grappler","x":2,"y":2,"rot":1},
-    {"type":"gear","x":3,"y":2,"rot":1},
-    ]},
-"Level xx":{"w":5,"h":5, # b33
-    "blocks":[
-    {"type":"rotator","x":1,"y":1,"rot":3},
-    {"type":"pusher","x":2,"y":1,"rot":3},
-    {"type":"grappler","x":3,"y":3,"rot":2},
-    {"type":"gear","x":1,"y":0,"rot":0},
-    {"type":"killer","x":0,"y":2,"rot":2},
-    {"type":"rotator","x":1,"y":3,"rot":1},
-    {"type":"pusher","x":2,"y":4,"rot":2},
-    {"type":"grappler","x":2,"y":2,"rot":1},
-    {"type":"gear","x":3,"y":2,"rot":1},
-    {"type":"killer","x":3,"y":0,"rot":3},
-    ]},
-"Level xxx":{"w":5,"h":5,
-    "blocks":[
-    {"type":"rotator","x":1,"y":1,"rot":3},
-    {"type":"pusher","x":2,"y":1,"rot":3},
-    {"type":"grappler","x":3,"y":3,"rot":2},
-    {"type":"gear","x":1,"y":0,"rot":0},
-    {"type":"killer","x":0,"y":2,"rot":2},
-    {"type":"magnet","x":4,"y":2,"rot":1},
-    {"type":"rotator","x":1,"y":3,"rot":1},
-    {"type":"pusher","x":2,"y":4,"rot":2},
-    {"type":"grappler","x":2,"y":2,"rot":1},
-    {"type":"gear","x":3,"y":2,"rot":1},
-    {"type":"killer","x":3,"y":0,"rot":3},
-    {"type":"magnet","x":1,"y":2,"rot":0},
-    ]},
-"magnet test":{"w":5,"h":5,
-    "blocks":[
-    {"type":"rotator","x":1,"y":1,"rot":3},
-    {"type":"pusher","x":2,"y":1,"rot":3},
-    {"type":"grappler","x":3,"y":3,"rot":2},
-    {"type":"gear","x":1,"y":0,"rot":0},
-    {"type":"magnet","x":0,"y":2,"rot":2},
-    {"type":"magnet","x":4,"y":2,"rot":1},
-    {"type":"magnet","x":1,"y":3,"rot":1},
-    {"type":"pusher","x":2,"y":4,"rot":1},
-    {"type":"grappler","x":2,"y":2,"rot":1},
-    {"type":"gear","x":3,"y":2,"rot":1},
-    {"type":"magnet","x":3,"y":0,"rot":3},
-    {"type":"magnet","x":1,"y":2,"rot":0},
-    ]},
-"cloner test":{"w":5,"h":5,
-    "blocks":[
-    {"type":"rotator","x":1,"y":1,"rot":3},
-    {"type":"pusher","x":2,"y":1,"rot":3},
-    {"type":"grappler","x":3,"y":3,"rot":2},
-    {"type":"gear","x":1,"y":0,"rot":0},
-    {"type":"swapper","x":2,"y":2,"rot":0},
-    {"type":"cloner","x":4,"y":2,"rot":1},
-    {"type":"cloner","x":1,"y":3,"rot":1},
-    {"type":"pusher","x":2,"y":4,"rot":1},
-    {"type":"grappler","x":0,"y":2,"rot":1},
-    {"type":"gear","x":3,"y":2,"rot":1},
-    {"type":"cloner","x":3,"y":0,"rot":3},
-    {"type":"ghost","x":1,"y":2,"rot":0},
-    ]},
-"cloner lvl":{"w":4,"h":4, # b18
-    "blocks":[
-    {"type":"pusher","x":1,"y":0,"rot":3},
-    {"type":"grappler","x":1,"y":2,"rot":1},
-    {"type":"grappler","x":2,"y":2,"rot":2},
-    {"type":"cloner","x":3,"y":2,"rot":1},
-    ]},
-"Level ?":{"w":5,"h":5, # 16
-    "blocks":[
-    {"type":"magnet","x":4,"y":3,"rot":3},
-    {"type":"magnet","x":3,"y":1,"rot":0},
-    {"type":"magnet","x":1,"y":2,"rot":1},
-    {"type":"gear","x":1,"y":3,"rot":1},
-    {"type":"pusher","x":0,"y":3,"rot":0},
-    {"type":"dragon","x":2,"y":1,"rot":2},
-    {"type":"dragon","x":4,"y":2,"rot":1},
-    {"type":"dragon","x":3,"y":4,"rot":0},
-    ]},
-}
+levelBlueprints={}
+with open('data/levels.json') as json_file:
+    levelBlueprints = json.load(json_file)
 def loadImage(name,r,r2=None):
     if not r2:
         r2=r
@@ -595,16 +396,13 @@ class Game():
     def __init__(self):
         self.mode = ""
         self.lvl = None
+        self.levelBlueprint = {}
         self.history = []
         self.levelName = ""
         self.fxs = []
-        #self.images = {}
-        #for i in self.blockNames:
-        #    image = loadImage(self.pathName+"/"+i+".png", gridSize)
-        #    self.images[i] = image
     def undo(self):
         if(self.history):
-            self.lvl=Level(levelBlueprint[self.levelName])
+            self.lvl=Level(self.levelBlueprint)
             self.history.pop()
             for move in self.history:
                 self.doMove(move)
@@ -616,9 +414,11 @@ class Game():
             self.win()
     def start(self):
         self.mode="p"
-        self.lvl = Level(levelBlueprint[self.levelName])
+        self.lvl = Level(self.levelBlueprint)
         self.history = []
-
+    def save(self):
+        self.levelBlueprint=self.lvl.toBlueprint()
+        levelBlueprints[self.levelName]=self.levelBlueprint
     def draw(self):
         game_display.fill((100,100,200))
         manager.draw_ui(game_display)
@@ -656,6 +456,13 @@ class Level():
            for i in range(self.width):
                 self.groundGrid.append([True]*self.height)
         self.setupBlocks(blueprint)
+    def editable(self):
+        for x in range(self.width):
+            for y in range(self.height):
+                block=self.grid[x][y]
+                if(block and (hasattr(block,"eaten") and block.eaten)):
+                    return False
+        return True
     def inbounds(self,x,y):
         return (0<=x<self.width and 0<=y<self.height)
     def onGround(self,x,y): # ingrounds
@@ -668,6 +475,17 @@ class Level():
                 block = blockClassHash[blockPrint["type"]](blockPrint["x"],blockPrint["y"],blockPrint["rot"])
                 self.grid[block.x][block.y]=block
         self.alignBoxes()
+    def toBlueprint(self):
+        blocksList=[]
+        for x in range(self.width):
+            for y in range(self.height):
+                block=self.grid[x][y]
+                ground=self.groundGrid[x][y]
+                if(block):
+                    blocksList.append({"type":classBlockHash[block.__class__],"x":block.x,"y":block.y,"rot":block.rot})
+                if(not ground):
+                    blocksList.append({"type":"water","x":x,"y":y})
+        return {"w":self.width,"h":self.height,"blocks":blocksList}
     def alignBoxes(self):
         topLeft[0]=resolution[0]/2-self.width*gridSize/2
         topLeft[1]=resolution[1]/2-self.height*gridSize*3/4
@@ -690,11 +508,11 @@ class Level():
                 if self.groundGrid[x][y]:
                     game_display.blit(self.grassImage, (x*gridSize+topLeft[0], y*gridSize+topLeft[1]))
 
-        gridColor = (2,2,2)
-        for i in range(self.height+1):
-            pygame.draw.line(game_display, gridColor, (topLeft[0],topLeft[1]+gridSize*i), (topLeft[0]+self.width*gridSize, topLeft[1]+gridSize*i), 1)
-        for i in range(self.width+1):
-            pygame.draw.line(game_display, gridColor, (topLeft[0]+gridSize*i,topLeft[1]), (topLeft[0]+gridSize*i, topLeft[1]+self.height*gridSize), 1)
+        #gridColor = (2,2,2)
+        #for i in range(self.height+1):
+        #    pygame.draw.line(game_display, gridColor, (topLeft[0],topLeft[1]+gridSize*i), (topLeft[0]+self.width*gridSize, topLeft[1]+gridSize*i), 1)
+        #for i in range(self.width+1):
+        #    pygame.draw.line(game_display, gridColor, (topLeft[0]+gridSize*i,topLeft[1]), (topLeft[0]+gridSize*i, topLeft[1]+self.height*gridSize), 1)
         
         for col in self.grid:
             for block in col:
@@ -705,12 +523,13 @@ class Level():
 
 
 blockClassHash={"rotator":Rotator,"gear":Gear,"grappler":Grappler,"pusher":Pusher,"killer":Killer,"magnet":Magnet,"cloner":Cloner,"dragon":Dragon,"fan":Fan,"bomb":Bomb,"ghost":Ghost,"swapper":Swapper}
+classBlockHash=inv_map = {v: k for k, v in blockClassHash.items()}
 
 # Main Menu
 menu_textbox = pygame_gui.elements.UITextBox(relative_rect=pygame.Rect((20, 25), (200, 75)),html_text="Select level",manager=managers[""])
 levelButtons=[]
 i=0
-for lvlbp in levelBlueprint:
+for lvlbp in levelBlueprints:
     levelButtons.append(pygame_gui.elements.UIButton(relative_rect=pygame.Rect((50+(i%9)*120, 275+100*(i//9)), (100, 50)),text=lvlbp,manager=managers[""]))
     i+=1
 #exit_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((350, 425), (200, 50)),text='Bye Bye',manager=managers[""])
@@ -737,9 +556,9 @@ edit_button2 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 105)
 # Editor
 play_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 105), (200, 100)),text='Play level',manager=managers["e"])
 back_button3 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((100, 505), (200, 100)),text='Back to Level select',manager=managers["e"])
-#undo_button2 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((400, 505), (200, 100)),text='Undo',manager=managers["e"])
-#reset_button3 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((600, 505), (200, 100)),text='Reset',manager=managers["e"])
-block_selector = pygame_gui.elements.UIDropDownMenu(list(blockClassHash),starting_option="rotator",relative_rect=pygame.Rect((100, 205), (200, 100)),manager=managers["e"])
+save_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((400, 505), (200, 100)),text='Save',manager=managers["e"])
+reset_button3 = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((600, 505), (200, 100)),text='Reset',manager=managers["e"])
+block_selector = pygame_gui.elements.UIDropDownMenu(list(blockClassHash)+["water"],starting_option="rotator",relative_rect=pygame.Rect((100, 205), (200, 100)),manager=managers["e"])
 
 
 game = Game()
@@ -768,8 +587,13 @@ while jump_out == False:
                         game.lvl.grid[mouseX][mouseY]=None
                 else:
                     if(game.mode=="e" and event.button == 1):
-                        newBlock = blockClassHash[block_selector.selected_option](mouseX,mouseY,0)
-                        game.lvl.grid[mouseX][mouseY]=newBlock
+                        if(block_selector.selected_option=="water"):
+                            game.lvl.groundGrid[mouseX][mouseY]=False
+                        elif(game.lvl.groundGrid[mouseX][mouseY]):
+                            newBlock = blockClassHash[block_selector.selected_option](mouseX,mouseY,0)
+                            game.lvl.grid[mouseX][mouseY]=newBlock
+                    if(game.mode=="e" and event.button == 3):
+                        game.lvl.groundGrid[mouseX][mouseY]=True
                     
 
 
@@ -784,6 +608,7 @@ while jump_out == False:
                 #    jump_out = True
                 if event.ui_element in levelButtons:
                     game.levelName=levelButtons[levelButtons.index(event.ui_element)].text
+                    game.levelBlueprint=levelBlueprints[game.levelName]
                     game.start()
                 if event.ui_element == undo_button:
                     game.undo()
@@ -792,10 +617,15 @@ while jump_out == False:
                 if event.ui_element == reset_button1 or event.ui_element == reset_button2:
                     game.start()
                 if event.ui_element == edit_button1 or event.ui_element == edit_button2:
-                    game.mode="e"
+                    if(game.lvl.editable()):
+                        game.mode="e"
                 if event.ui_element == play_button:
-                    game.mode="p"
-                    game.history=[]
+                    game.levelBlueprint=game.lvl.toBlueprint()
+                    game.start()
+                if event.ui_element == save_button:
+                    game.save()
+                if event.ui_element == reset_button3:
+                    game.lvl = Level(levelBlueprints[game.levelName])
                 if event.ui_element == next_button:
                     ks=list(levelBlueprint.keys())
                     inx = ks.index(game.levelName)+1
@@ -816,6 +646,7 @@ while jump_out == False:
 
     pygame.display.flip()
 
-
+with open('data/levels.json',"w") as json_file:
+    json.dump(levelBlueprints,json_file)
 pygame.quit()
 quit()
