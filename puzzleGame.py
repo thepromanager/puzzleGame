@@ -87,7 +87,7 @@ class Block():
     def move(self,rot):
         newx = self.x+self.dx(rot)
         newy = self.y+self.dy(rot)
-        if(lvl.inbounds(newx,newy)):
+        if(lvl.ingrounds(newx,newy)):
             block=game.lvl.grid[newx][newy]
             if block:
                 if(block.collision(self,rot)):
@@ -104,8 +104,6 @@ class Block():
                 game.lvl.grid[self.x][self.y] = None
                 self.x=newx
                 self.y=newy
-            if not lvl.onGround(newx,newy):
-                self.die()
         else:
             self.die()
     def scan(self):
@@ -123,7 +121,9 @@ class Block():
     def createFx(self,length,time,startImage,middleImage=None,endImage=None):
         dx=self.dx()
         dy=self.dy()
-        images=[[self.x,self.y,startImage]]
+        images=[]
+        if startImage:
+            images+=[[self.x,self.y,startImage]]
         if(length>0 and endImage):
             images+=[[self.x+dx*(length),self.y+dy*length,endImage]]
         if(length>1 and middleImage):
@@ -235,7 +235,7 @@ class Grappler(Block):
     def rotate(self,direction=1):
         super().rotate(direction)
         if(self.eaten):
-            self.eaten.rot = (self.eaten.rot + direction)%4
+            self.eaten.rotate(direction)# = (self.eaten.rot + direction)%4
     def flip(self, is_vertical):
         super().flip(is_vertical)
         if(self.eaten):
@@ -246,7 +246,7 @@ class Swapper(Block):
     def activate(self):
         block = self.scan()
         if block:
-            self.createFx(abs(block.x+block.y-self.x-self.y),10,self.images[self.rot],self.fx1[self.rot])
+            self.createFx(abs(block.x+block.y-self.x-self.y),10,None,self.fx1[self.rot])
             game.lvl.grid[self.x][self.y], game.lvl.grid[block.x][block.y] = block, self
             block.x, self.x = self.x, block.x
             block.y, self.y = self.y, block.y
@@ -340,7 +340,9 @@ class Bomb(Block):
     def activate(self):
         for offset in (0,1),(1,0),(-1,0),(0,-1):
             if(lvl.inbounds(self.x+offset[0],self.y+offset[1])):
-                game.lvl.grid[self.x+offset[0]][self.y+offset[1]].die()
+                block = game.lvl.grid[self.x+offset[0]][self.y+offset[1]]
+                if block:
+                    block.die()
         self.die()
 class Ghost(Block):
     images1=imageSpinner(loadImage("blocks/ghost.png", gridSize))
@@ -469,8 +471,10 @@ class Level():
         return True
     def inbounds(self,x,y):
         return (0<=x<self.width and 0<=y<self.height)
-    def onGround(self,x,y): # ingrounds
-        return (0<=x<self.width and 0<=y<self.height)
+    def ingrounds(self,x,y):
+        if (0<=x<self.width and 0<=y<self.height):
+            return (self.groundGrid[x][y])
+        return False
     def setupBlocks(self,blueprint):
         for blockPrint in blueprint["blocks"]:
             if blockPrint["type"]=="water":
@@ -631,10 +635,11 @@ while jump_out == False:
                 if event.ui_element == reset_button3:
                     game.lvl = Level(levelBlueprints[game.levelName])
                 if event.ui_element == next_button:
-                    ks=list(levelBlueprint.keys())
+                    ks=list(levelBlueprints.keys())
                     inx = ks.index(game.levelName)+1
                     if inx<len(ks):
                         game.levelName=ks[inx]
+                        game.levelBlueprint = levelBlueprints[game.levelName]
                         game.start()
                     else:
                         game.mode=""
