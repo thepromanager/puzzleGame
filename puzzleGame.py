@@ -236,6 +236,10 @@ class Grappler(Block):
         super().rotate(direction)
         if(self.eaten):
             self.eaten.rot = (self.eaten.rot + direction)%4
+    def flip(self, is_vertical):
+        super().flip(is_vertical)
+        if(self.eaten):
+            self.eaten.flip(is_vertical)
 class Swapper(Block):
     images=imageSpinner(loadImage("blocks/swapper.png", gridSize))
     fx1=imageSpinner(loadImage("blocks/swapperFX1.png", gridSize))
